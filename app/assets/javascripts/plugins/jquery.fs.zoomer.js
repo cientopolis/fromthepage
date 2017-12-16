@@ -246,6 +246,7 @@
 		 * @example $(".target").zoomer("resize");
 		 */
 		resize: function() {
+			
 			return $(this).each(function(i, target) {
 				var data = $(target).data("zoomer");
 
@@ -335,12 +336,16 @@
 			data = _normalizeSource(data);
 
 			// Assemble HTML
+
 			var html = '<div class="zoomer ' + data.customClass + '">';
 			html += '<div class="zoomer-positioner">';
 			html += '<div class="zoomer-holder">';
+			html += '<canvas style=" position:absolute;" id="imgCanvas" width="300" height="500"></canvas>';
 			html += '</div>';
 			html += '</div>';
 			html += '</div>';
+					
+
 
 			data.$zoomer = $(html);
 			data.$target.addClass("zoomer-element")
@@ -389,6 +394,7 @@
 			if (data.images.length > 0) {
 				_load.apply(data.$target, [ data ]);
 			}
+			
 		}
 	}
 
@@ -422,8 +428,35 @@
 	 * @description Handles loading an image or set of tiles
 	 * @param data [object] "Instance data"
 	 * @param source [string | object] "Source URL or object"
+
+
 	 */
+
+	function drawCanvas(){
+	
+	var canvas;
+	var context;
+	var imageObj;
+	canvas = document.getElementById("imgCanvas");
+	context = canvas.getContext("2d");
+
+	imageObj = document.getElementsByClassName('zoomer-image')[0];
+	context.canvas.width = imageObj.width;
+	context.canvas.height = imageObj.height;
+   	context.drawImage(imageObj, 0, 0,imageObj.width,imageObj.height);
+	$("#imgCanvas").click(function(e) {
+		console.log(e);
+		console.log($(this));
+		var offset = $(this).offset();
+	    var x = e.pageX - offset.left;
+	    var y = e.pageY - offset.top;
+	    context.fillStyle = "#000000";
+	    context.fillRect(x-2, y-2, 10, 10);
+	});
+	 }
 	function _loadImage(data, source) {
+
+
 		data.loading = true;
 
 		if (data.tiled) {
@@ -455,7 +488,8 @@
 			});
 		} else {
 			// Cache current image
-			data.$image = $('<img class="zoomer-image" />');
+
+			data.$image = $('<img class="zoomer-image" style="visibility:hidden"/>');
 			data.$image.one("load.zoomer", data, _onImageLoad)
 						 .attr("src", source);
 
@@ -464,6 +498,7 @@
 				data.$image.trigger("load");
 			}
 		}
+		drawCanvas();
 	}
 
 	/**
@@ -831,6 +866,8 @@
 	 * @param e [object] "Event Data"
 	 */
 	function _zoomIn(e) {
+		console.log(e.data);
+		
 		e.preventDefault();
 		e.stopPropagation();
 
