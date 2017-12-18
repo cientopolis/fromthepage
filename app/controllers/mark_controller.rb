@@ -14,6 +14,9 @@ class MarkController < ApplicationController
   # POST /mark/new.json
   def new
     @mark = Mark.new(mark_params)
+    if @page_version
+      @mark.page_version=@page_version
+    end
 
     if @mark.save
       render json: @mark, status: :created
@@ -40,6 +43,10 @@ class MarkController < ApplicationController
     def set_mark
       @mark = Mark.find(params[:id])
       raise ActiveRecord::RecordNotFound unless @mark
+    end
+    
+    def set_page_version
+      @page_version = PageVersion.find(params[:page_version_id])
     end
   
   
