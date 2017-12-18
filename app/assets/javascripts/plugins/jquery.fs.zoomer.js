@@ -143,6 +143,15 @@
 		pinchDeltaEnd: 0
 	};
 
+	var allowDraw = false;
+	var points = new Array();
+	var coordinateDraw = { from:{
+								x:null, y:null}
+							,to:{
+								x:null, y:null}};
+
+	
+
 	/**
 	 * @events
 	 * @event zoomer.loaded "Source media loaded"
@@ -432,7 +441,60 @@
 
 	 */
 
+//	 agrega un punto o coordenada
+	function addCoordinate(x,y){
+		console.log(x);
+		console.log(y);
+		var lastIndex= points.length;
+		if(lastIndex==0 || (points[lastIndex-1].from.x!=null && points[lastIndex-1].to.x!=null)){
+			console.log("entro aqui");
+			console.log(points);
+			var coordinateDraw = { from:{x:null, y:null},to:{x:null, y:null}};
+			points.push(coordinateDraw);
+			lastIndex= points.length;
+			console.log(points);
+		}
+		var coord = points[lastIndex-1];
+		console.log(points);
+		if(coord.from.x!=null && coord.to.x==null){
+			console.log("entro i");
+		    	coord.to.x=x;
+			    coord.to.y=y;
+		}
+		if(coord.from.x==null){
+			console.log("def");
+			    coord.from.x=x;
+			    coord.from.y=y;
+	    }
+	    console.log(points);
+	    return coord;
+
+	}
+
+	
+	 //se borran todas las marcas
+	 function borrarMarcas(){
+	 		$("#deleteMarks").attr("style", "visibility: hidden");
+	 	  	$("#deleteMarks").click(function(e) {
+	 	  		allowDraw=false;
+	 	  		points = new Array();
+	 	  		drawCanvas();
+		 		$("#deleteMarks").attr("style", "visibility: hidden");
+		 		
+		 		
+		 		allowDraw=true;
+	 		
+	 	});
+	 }
+
+	function loadCanvas(){
+		borrarMarcas();
+		drawCanvas();
+	}
+
+	//carga el canvas con la imagen de la pagina, este es el primer paso
 	function drawCanvas(){
+
 	
 	var canvas;
 	var context;
@@ -445,15 +507,46 @@
 	context.canvas.height = imageObj.height;
    	context.drawImage(imageObj, 0, 0,imageObj.width,imageObj.height);
 	$("#imgCanvas").click(function(e) {
-		console.log(e);
-		console.log($(this));
-		var offset = $(this).offset();
-	    var x = e.pageX - offset.left;
-	    var y = e.pageY - offset.top;
-	    context.fillStyle = "#000000";
-	    context.fillRect(x-2, y-2, 10, 10);
+
+		if(allowDraw){
+			console.log("click");
+			$("#deleteMarks").attr("style", "visibility: visible");
+			
+			var offset = $(this).offset();
+			
+		    var x = e.pageX - offset.left;
+		    var y = e.pageY - offset.top;
+		  	var coord = addCoordinate(x,y);
+	
+		  
+		    context.fillStyle = "#ff2626";
+		    context.beginPath();
+		    context.arc(x, y, 6, 0, Math.PI * 2, true);
+		    context.fill();
+
+		   	if(coord.from.x!=null && coord.to.x!=null){
+		   		console.log("entro");
+		   		console.log(coord);
+		   		context.globalAlpha = 0.5;
+		   		context.moveTo(coord.from.x, coord.from.y);
+		   		//context.fillRect(x, y, 10, 10);
+		   		context.strokeStyle="#ff2626";
+		   		context.lineWidth=12;
+		   		context.moveTo(coord.to.x, coord.to.y);
+			    context.strokeRect(coord.from.x, coord.from.y, coord.to.x - coord.from.x, coord.to.y - coord.from.y);
+			    context.stroke();
+			    context.fill();
+
+		    }else{
+		    	console.log("noentro");
+		    }
+		    //context.fillStyle = "#ff2626";
+		    //context.fillRect(x-2, y-2, 10, 10);
+		}
+
 	});
 	 }
+
 	function _loadImage(data, source) {
 
 
@@ -498,7 +591,7 @@
 				data.$image.trigger("load");
 			}
 		}
-		drawCanvas();
+		loadCanvas();
 	}
 
 	/**
@@ -694,7 +787,7 @@
 				if (transformSupported) {
 					var scaleX = data.imageWidth / data.naturalWidth,
 						scaleY = data.imageHeight / data.naturalHeight;
-
+						console.log();
 					data.$positioner.css(_prefix("transform", "translate3d(" + data.positionerLeft + "px, " + data.positionerTop + "px, 0)"));
 					data.$holder.css(_prefix("transform", "translate3d(-50%, -50%, 0) scale(" + scaleX + "," + scaleY + ")"));
 				} else {
@@ -727,13 +820,15 @@
 	 * @param data [object] "Instance Data"
 	 */
 	function _updateValues(data) {
+		
 		// Update values based on current action
 		if (data.action === "zoom_in" || data.action === "zoom_out") {
 			// Calculate change
 			data.keyDownTime += data.increment;
 			var delta = ((data.action === "zoom_out") ? -1 : 1) * Math.round((data.imageWidth * data.keyDownTime) - data.imageWidth);
-
+			
 			if (data.aspect === "tall") {
+				
 				data.targetImageHeight += delta;
 				data.targetImageWidth = Math.round(data.targetImageHeight / data.imageRatioTall);
 			} else {
@@ -748,6 +843,9 @@
 				data.targetImageHeight = data.minHeight;
 				data.targetImageWidth	= Math.round(data.targetImageHeight / data.imageRatioTall);
 			} else if (data.targetImageHeight > data.maxHeight) {
+			console.log("max");
+				allowDraw=true;
+				console.log("allow-draw");
 				data.targetImageHeight = data.maxHeight;
 				data.targetImageWidth	= Math.round(data.targetImageHeight / data.imageRatioTall);
 			}
@@ -756,6 +854,9 @@
 				data.targetImageWidth	= data.minWidth;
 				data.targetImageHeight = Math.round(data.targetImageWidth / data.imageRatioWide);
 			} else if (data.targetImageWidth > data.maxWidth)	{
+				console.log("max");
+				allowDraw=true;
+				console.log("allow-draw");
 				data.targetImageWidth	= data.maxWidth;
 				data.targetImageHeight = Math.round(data.targetImageWidth / data.imageRatioWide);
 			}
@@ -866,7 +967,7 @@
 	 * @param e [object] "Event Data"
 	 */
 	function _zoomIn(e) {
-		console.log(e.data);
+		
 		
 		e.preventDefault();
 		e.stopPropagation();
@@ -885,6 +986,8 @@
 	 * @param e [object] "Event Data"
 	 */
 	function _zoomOut(e) {
+		allowDraw=false;
+		
 		e.preventDefault();
 		e.stopPropagation();
 
@@ -921,6 +1024,7 @@
 	 * @param top [number] "Top position"
 	 */
 	function _setZoomPosition(data, left, top) {
+		console.log("setzoom");
 		left = left || (data.imageWidth * 0.5);
 		top	= top || (data.imageHeight * 0.5);
 
