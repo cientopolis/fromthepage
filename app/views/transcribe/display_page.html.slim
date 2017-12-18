@@ -26,6 +26,9 @@
           =check_box_tag 'auto-fullscreen', 'yes', @auto_fullscreen == 'yes'
           |&nbsp;
           span Always show in fullscreen
+      .toolbar_group
+        a.button id="deleteMarks" Borrar marcas
+          
 
       .toolbar_group.w100.aright
         =f.label 'mark_blank', 'Mark as blank'
@@ -97,15 +100,19 @@ h2.legend Page Notes
 
 -content_for :javascript
   javascript:
+
     $(function() {
       $('[data-fullscreen-toggle]').on('click', function() {
+      
         $(this).toggleClass('pressed');
         $('.page-editor').toggleClass('fullscreen');
         $(window).trigger('resize.FullHeight');
         $('.zoomer-container').zoomer('resize');
       });
       $('[data-layout-set]').on('click', function() {
+
         var mode = $(this).data('layout-set');
+
         Cookies.set('transcribe_layout_mode', mode, { expires: 365 });
         $('[data-layout-mode]').attr('data-layout-mode', mode);
         $('.zoomer-container').zoomer('resize');
@@ -115,6 +122,7 @@ h2.legend Page Notes
         Cookies.set('auto_fullscreen', checked, { expires: 365 });
       });
     });
+
 
     $(function(){
       $('#page_needs_review').click(function(){
