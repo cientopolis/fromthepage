@@ -86,3 +86,6 @@ gem 'ahoy_matey'
 gem "figaro"
 
 gem 'lodash-rails'
+
+# Use font awesome icons
+gem "font-awesome-rails"
