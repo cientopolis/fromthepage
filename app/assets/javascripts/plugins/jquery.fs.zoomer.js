@@ -472,48 +472,51 @@
 	}
 
 	function deleteCoordinates(coord){
+		var id = $("#page_id").attr('value');
+		console.log(id);
+		var success = "";
+
 		$.ajax({
 			dataType: "json",
-			url: "http://localhost:3000/mark/delete/" + coord.id,
-			type: 'POST',
-			success: function(){
-				loadCanvas()
-			}
+			url: "http://localhost:3000/mark/delete",
+			data: coord,
+			type: 'DELETE',
+			success: success
 		});
 	}
 
 	function putCoordinates(coord){
+		var id = $("#page_id").attr('value');
+		console.log(id);
 		// POST /mark/new?start_x=1&start_y=1&end_x=1&end_y=2\
 		var start_x=coord.from.x;
 		var start_y=coord.from.y;
 		var end_x=coord.to.x;
 		var end_y=coord.to.y;
+		 var success = "";
 		$.ajax({
 		  dataType: "json",
-		  url: "http://localhost:3000/mark/new?start_x="+start_x+"&start_y="+start_y+"&end_x="+end_x+"&end_y="+end_y+"",
+		  url: "http://localhost:3000/mark/new?page_version_id="+id+"&start_x="+start_x+"&start_y="+start_y+"&end_x="+end_x+"&end_y="+end_y+"",
 		  data: coord,
-		  success: function(){
-				loadCanvas()
-			}
+		  success: success
 		});
 	}
 
 	function getCoordinates(page_id){
 		var canvas;
-	var context;
-	var imageObj;
-	canvas = document.getElementById("imgCanvas");
-	context = canvas.getContext("2d");
+		var context;
+		var imageObj;
+		canvas = document.getElementById("imgCanvas");
+		context = canvas.getContext("2d");
 
-		console.log("getCoordinates");
+
 		var coords = new Array();
 		var canvas =$("#imgCanvas");
-		$.getJSON("http://localhost:3000/mark", function(result){
+		$.getJSON("http://localhost:3000/mark?page_version_id="+page_id, function(result){
 		        $.each(result, function(i, field){
 		         
 		          var coord = { from:{x:null, y:null},to:{x:null, y:null}};
-		          coord.id=field.id;
-							coord.from.x=field.start_x;
+		          coord.from.x=field.start_x;
 		          coord.from.y=field.start_y;
 		          coord.to.x=field.end_x;
 		          coord.to.y=field.end_y;
@@ -522,16 +525,15 @@
 				    context.fillStyle = "#ff2626";
 					context.beginPath();
 					context.arc(coord.from.x, coord.from.y, 6, 0, Math.PI * 2, true);
-					context.arc( coord.to.x,  coord.to.y, 6, 0, Math.PI * 2, true);
+					//context.arc( coord.to.x,  coord.to.y, 6, 0, Math.PI * 2, true);
 					context.fill();
-					/*
+					
 					if(coord.from.x!=null && coord.to.x!=null){
-						putCoordinates(coord);
+						
 						console.log("entro");
 						console.log(coord);
-						context.globalAlpha = 0.5;
+						context.globalAlpha = 0.3;
 						context.moveTo(coord.from.x, coord.from.y);
-							   		//context.fillRect(x, y, 10, 10);
 						context.strokeStyle="#ff2626";
 						context.lineWidth=12;
 						context.moveTo(coord.to.x, coord.to.y);
@@ -542,8 +544,8 @@
 					}else{
 						console.log("noentro");
 					}
-*/
-		          coords.push(coord);
+
+		          coords.push(coordinateDraw);
 		        });
  		   });
 		  console.log(coords);
@@ -551,13 +553,6 @@
 
 	}
 
-	function drawCoordinatesPersist(coordinates){
-		
-					
-			
-		
-		  
-	}
 
 	
 	 //se borran todas las marcas
@@ -574,13 +569,11 @@
 	 	});
 	 }
 
-var coordsP;
-var selectionPrecision=10;
-
 	function loadCanvas(){
-		
-		coordsP = getCoordinates(3);
-		drawCoordinatesPersist(coordsP);
+		var id = $("#page_id").attr('value');
+		console.log(id);
+		var coords = getCoordinates(id);
+		//drawCoordinatesPersist(coords);
 		borrarMarcas();
 		drawCanvas();
 	}
@@ -609,35 +602,21 @@ var selectionPrecision=10;
 			
 		    var x = e.pageX - offset.left;
 		    var y = e.pageY - offset.top;
-				
-				var coordToDelete=_.find(coordsP, function(c){
-					return (c.from.x < (x + selectionPrecision) && c.from.x > (x - selectionPrecision) && c.from.y < (y + selectionPrecision) && c.from.y > (y - selectionPrecision)) ||
-						(c.to.x < (x + selectionPrecision) && c.to.x > (x - selectionPrecision) && c.to.y < (y + selectionPrecision) && c.to.y > (y - selectionPrecision));
-				});
-				console.log(coordToDelete);
-				if(coordToDelete){
-						deleteCoordinates(coordToDelete);
-				}
-				else{
-					
-					var coord = addCoordinate(x,y);
-					
-					
-					context.fillStyle = "#ff2626";
-					context.beginPath();
-					context.arc(x, y, 6, 0, Math.PI * 2, true);
-					context.fill();
-					
-					if(coord.from.x!=null && coord.to.x!=null){
-						putCoordinates(coord);
-					}
-					
-					
-				}
-		   		/*
+		  	var coord = addCoordinate(x,y);
+	
+		  
+		    context.fillStyle = "#ff2626";
+		    context.beginPath();
+		    context.arc(x, y, 6, 0, Math.PI * 2, true);
+		    context.fill();
+		    
+		   	if(coord.from.x!=null && coord.to.x!=null){
+		   		putCoordinates(coord);
+		   
+		   		
 		   		console.log("entro");
 		   		console.log(coord);
-		   		context.globalAlpha = 0.5;
+		   		context.globalAlpha = 0.3;
 		   		context.moveTo(coord.from.x, coord.from.y);
 		   		//context.fillRect(x, y, 10, 10);
 		   		context.strokeStyle="#ff2626";
@@ -650,7 +629,7 @@ var selectionPrecision=10;
 		    }else{
 		    	console.log("noentro");
 		    }
-		    */
+		    
 		    //context.fillStyle = "#ff2626";
 		    //context.fillRect(x-2, y-2, 10, 10);
 		}
