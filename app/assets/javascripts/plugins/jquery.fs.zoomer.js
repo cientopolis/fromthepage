@@ -472,7 +472,8 @@
 	}
 
 	function deleteCoordinates(coord){
-	
+		var id = $("#page_id").attr('value');
+		console.log(id);
 		var success = "";
 
 		$.ajax({
@@ -503,12 +504,12 @@
 
 	function getCoordinates(page_id){
 		var canvas;
-	var context;
-	var imageObj;
-	canvas = document.getElementById("imgCanvas");
-	context = canvas.getContext("2d");
+		var context;
+		var imageObj;
+		canvas = document.getElementById("imgCanvas");
+		context = canvas.getContext("2d");
 
-		alert("getCoordinates");
+
 		var coords = new Array();
 		var canvas =$("#imgCanvas");
 		$.getJSON("http://localhost:3000/mark?page_version_id="+page_id, function(result){
@@ -524,16 +525,15 @@
 				    context.fillStyle = "#ff2626";
 					context.beginPath();
 					context.arc(coord.from.x, coord.from.y, 6, 0, Math.PI * 2, true);
-					context.arc( coord.to.x,  coord.to.y, 6, 0, Math.PI * 2, true);
+					//context.arc( coord.to.x,  coord.to.y, 6, 0, Math.PI * 2, true);
 					context.fill();
-					/*
+					
 					if(coord.from.x!=null && coord.to.x!=null){
-						putCoordinates(coord);
+						
 						console.log("entro");
 						console.log(coord);
-						context.globalAlpha = 0.5;
+						context.globalAlpha = 0.3;
 						context.moveTo(coord.from.x, coord.from.y);
-							   		//context.fillRect(x, y, 10, 10);
 						context.strokeStyle="#ff2626";
 						context.lineWidth=12;
 						context.moveTo(coord.to.x, coord.to.y);
@@ -544,7 +544,7 @@
 					}else{
 						console.log("noentro");
 					}
-*/
+
 		          coords.push(coordinateDraw);
 		        });
  		   });
@@ -553,13 +553,6 @@
 
 	}
 
-	function drawCoordinatesPersist(coordinates){
-		
-					
-			
-		
-		  
-	}
 
 	
 	 //se borran todas las marcas
@@ -580,7 +573,7 @@
 		var id = $("#page_id").attr('value');
 		console.log(id);
 		var coords = getCoordinates(id);
-		drawCoordinatesPersist(coords);
+		//drawCoordinatesPersist(coords);
 		borrarMarcas();
 		drawCanvas();
 	}
@@ -619,11 +612,11 @@
 		    
 		   	if(coord.from.x!=null && coord.to.x!=null){
 		   		putCoordinates(coord);
-		   	}
-		   		/*
+		   
+		   		
 		   		console.log("entro");
 		   		console.log(coord);
-		   		context.globalAlpha = 0.5;
+		   		context.globalAlpha = 0.3;
 		   		context.moveTo(coord.from.x, coord.from.y);
 		   		//context.fillRect(x, y, 10, 10);
 		   		context.strokeStyle="#ff2626";
@@ -636,7 +629,7 @@
 		    }else{
 		    	console.log("noentro");
 		    }
-		    */
+		    
 		    //context.fillStyle = "#ff2626";
 		    //context.fillRect(x-2, y-2, 10, 10);
 		}
