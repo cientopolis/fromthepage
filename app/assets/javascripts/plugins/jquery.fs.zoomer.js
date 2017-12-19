@@ -485,6 +485,8 @@
 	}
 
 	function putCoordinates(coord){
+		var id = $("#page_id").attr('value');
+		console.log(id);
 		// POST /mark/new?start_x=1&start_y=1&end_x=1&end_y=2\
 		var start_x=coord.from.x;
 		var start_y=coord.from.y;
@@ -493,7 +495,7 @@
 		 var success = "";
 		$.ajax({
 		  dataType: "json",
-		  url: "http://localhost:3000/mark/new?start_x="+start_x+"&start_y="+start_y+"&end_x="+end_x+"&end_y="+end_y+"",
+		  url: "http://localhost:3000/mark/new?page_version_id="+id+"&start_x="+start_x+"&start_y="+start_y+"&end_x="+end_x+"&end_y="+end_y+"",
 		  data: coord,
 		  success: success
 		});
@@ -509,7 +511,7 @@
 		alert("getCoordinates");
 		var coords = new Array();
 		var canvas =$("#imgCanvas");
-		$.getJSON("http://localhost:3000/mark", function(result){
+		$.getJSON("http://localhost:3000/mark?page_version_id="+page_id, function(result){
 		        $.each(result, function(i, field){
 		         
 		          var coord = { from:{x:null, y:null},to:{x:null, y:null}};
@@ -575,8 +577,9 @@
 	 }
 
 	function loadCanvas(){
-		
-		var coords = getCoordinates(3);
+		var id = $("#page_id").attr('value');
+		console.log(id);
+		var coords = getCoordinates(id);
 		drawCoordinatesPersist(coords);
 		borrarMarcas();
 		drawCanvas();
