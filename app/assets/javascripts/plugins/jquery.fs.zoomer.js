@@ -472,15 +472,13 @@
 	}
 
 	function deleteCoordinates(coord){
-	
-		var success = "";
-
 		$.ajax({
 			dataType: "json",
-			url: "http://localhost:3000/mark/delete",
-			data: coord,
-			type: 'DELETE',
-			success: success
+			url: "http://localhost:3000/mark/delete/" + coord.id,
+			type: 'POST',
+			success: function(){
+				loadCanvas()
+			}
 		});
 	}
 
@@ -490,12 +488,13 @@
 		var start_y=coord.from.y;
 		var end_x=coord.to.x;
 		var end_y=coord.to.y;
-		 var success = "";
 		$.ajax({
 		  dataType: "json",
 		  url: "http://localhost:3000/mark/new?start_x="+start_x+"&start_y="+start_y+"&end_x="+end_x+"&end_y="+end_y+"",
 		  data: coord,
-		  success: success
+		  success: function(){
+				loadCanvas()
+			}
 		});
 	}
 
@@ -506,14 +505,15 @@
 	canvas = document.getElementById("imgCanvas");
 	context = canvas.getContext("2d");
 
-		alert("getCoordinates");
+		console.log("getCoordinates");
 		var coords = new Array();
 		var canvas =$("#imgCanvas");
 		$.getJSON("http://localhost:3000/mark", function(result){
 		        $.each(result, function(i, field){
 		         
 		          var coord = { from:{x:null, y:null},to:{x:null, y:null}};
-		          coord.from.x=field.start_x;
+		          coord.id=field.id;
+							coord.from.x=field.start_x;
 		          coord.from.y=field.start_y;
 		          coord.to.x=field.end_x;
 		          coord.to.y=field.end_y;
@@ -543,7 +543,7 @@
 						console.log("noentro");
 					}
 */
-		          coords.push(coordinateDraw);
+		          coords.push(coord);
 		        });
  		   });
 		  console.log(coords);
@@ -574,10 +574,13 @@
 	 	});
 	 }
 
+var coordsP;
+var selectionPrecision=10;
+
 	function loadCanvas(){
 		
-		var coords = getCoordinates(3);
-		drawCoordinatesPersist(coords);
+		coordsP = getCoordinates(3);
+		drawCoordinatesPersist(coordsP);
 		borrarMarcas();
 		drawCanvas();
 	}
@@ -606,17 +609,31 @@
 			
 		    var x = e.pageX - offset.left;
 		    var y = e.pageY - offset.top;
-		  	var coord = addCoordinate(x,y);
-	
-		  
-		    context.fillStyle = "#ff2626";
-		    context.beginPath();
-		    context.arc(x, y, 6, 0, Math.PI * 2, true);
-		    context.fill();
-		    
-		   	if(coord.from.x!=null && coord.to.x!=null){
-		   		putCoordinates(coord);
-		   	}
+				
+				var coordToDelete=_.find(coordsP, function(c){
+					return (c.from.x < (x + selectionPrecision) && c.from.x > (x - selectionPrecision) && c.from.y < (y + selectionPrecision) && c.from.y > (y - selectionPrecision)) ||
+						(c.to.x < (x + selectionPrecision) && c.to.x > (x - selectionPrecision) && c.to.y < (y + selectionPrecision) && c.to.y > (y - selectionPrecision));
+				});
+				console.log(coordToDelete);
+				if(coordToDelete){
+						deleteCoordinates(coordToDelete);
+				}
+				else{
+					
+					var coord = addCoordinate(x,y);
+					
+					
+					context.fillStyle = "#ff2626";
+					context.beginPath();
+					context.arc(x, y, 6, 0, Math.PI * 2, true);
+					context.fill();
+					
+					if(coord.from.x!=null && coord.to.x!=null){
+						putCoordinates(coord);
+					}
+					
+					
+				}
 		   		/*
 		   		console.log("entro");
 		   		console.log(coord);

@@ -13,6 +13,7 @@
 //= require jquery
 //= require jquery_ujs
 //= require_tree ./plugins
+//= require lodash
 
 
 ;(function($, window, document, undefined) {
