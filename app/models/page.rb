@@ -42,11 +42,13 @@ class Page < ActiveRecord::Base
   attr_accessible :source_translation
   attr_accessible :status
   attr_accessible :source_template
-
+  attr_accessible :words
+  attr_accessible :lines
+  attr_accessible :progress
   scope :unrestricted, -> { where(restricted: false)}
   scope :review, -> { where(status: 'review')}
   scope :translation_review, -> { where(translation_status: 'review')}
-  
+
   module TEXT_TYPE
     TRANSCRIPTION = 'transcription'
     TRANSLATION = 'translation'
@@ -102,7 +104,7 @@ class Page < ActiveRecord::Base
     if self.ia_leaf
       self.ia_leaf.facsimile_url
     elsif self.sc_canvas
-      self.sc_canvas.facsimile_url      
+      self.sc_canvas.facsimile_url
     else
       base_image
     end
@@ -111,7 +113,7 @@ class Page < ActiveRecord::Base
   def base_image
     self[:base_image] || ""
   end
-  
+
   def base_image_url
     if self[:base_image]
       file_to_url(self[:base_image])
@@ -189,13 +191,13 @@ class Page < ActiveRecord::Base
       self.sections.each { |s| s.delete }
       self.table_cells.each { |c| c.delete }
   #    binding.pry
-      
+
       @sections.each do |section|
         section.pages << self
         section.work = self.work
         section.save!
       end
-      
+
       self.table_cells.each { |c| c.delete }
       @tables.each do |table|
         table[:rows].each_with_index do |row, rownum|
@@ -210,7 +212,7 @@ class Page < ActiveRecord::Base
           end
         end
       end
-      
+
     end
   end
 
@@ -225,7 +227,7 @@ class Page < ActiveRecord::Base
       TexFigure.submit_background_process(self.id)
     end
   end
-  
+
   def update_tex_figures
     self.tex_figures.each do |tex_figure|
       if tex_figure.changed?
@@ -299,11 +301,25 @@ UPDATE `articles` SET graph_image=NULL WHERE `articles`.`id` IN (SELECT article_
     self.status = 'translated'
     self.save!
   end
-  
+
   def serializable_hash(options={})
     options[:except] ||= [:base_image]
     options[:methods] ||= [:base_image_url]
     super(options)
+  end
+
+  def porgress
+    words = 0
+    self.marks.each do |mark|
+      words = words + mark.transcription.text.split(" ").length
+    end
+    if self.words!=0
+      result =words*100/self.words
+    else
+      result=0
+    end
+
+    self.progress=result
   end
 
 private

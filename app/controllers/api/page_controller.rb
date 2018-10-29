@@ -3,7 +3,7 @@ class Api::PageController < Api::ApiController
   require 'image_helper'
   include ImageHelper
 
-  before_action :set_work, :only => [:create, :update]  
+  before_action :set_work, :only => [:create, :update]
   before_action :set_page, :only => [:show, :update, :destroy]
 
   # protect_from_forgery :except => [:set_page_title]
@@ -22,7 +22,8 @@ class Api::PageController < Api::ApiController
     return [:show]
   end
 
-  def show    
+  def show
+    @page.porgress
     response_serialized_object @page
   end
 
@@ -80,13 +81,14 @@ class Api::PageController < Api::ApiController
   def update
     page = Page.find(params[:id])
     page.work = @work
+    puts params[:page]
     page.update_attributes(params[:page])
     # flash[:notice] = 'Page has been successfully updated'
-    
+
     if params[:image_base64]
       process_base64_image(page)
     end
-
+    page.porgress
     # redirect_to :back
     render_serialized ResponseWS.ok('api.page.update.success',page)
   end
@@ -100,8 +102,8 @@ private
     unless Dir.exist? dirname
       FileUtils.mkdir_p(dirname)
     end
-    
-    decoded_base64_content = Base64.decode64(params[:image_base64]) 
+
+    decoded_base64_content = Base64.decode64(params[:image_base64])
     File.open(filename, "wb") do |f|
       f.write(decoded_base64_content)
     end
@@ -117,13 +119,13 @@ private
     image = nil
     page.save!
   end
-  
+
   def set_page
     unless @page
       @page = Page.find(params[:id])
     end
   end
-  
+
   def set_work
     unless @work
       if Work.friendly.exists?(params[:page][:work_id])
@@ -133,5 +135,5 @@ private
       end
     end
   end
-  
+
 end
