@@ -13,21 +13,11 @@ class Api::ApiController < ApplicationController
         logger.debug "[ACCESS] #{controller_name}##{action_name} -> User not authorized"
         render_serialized _not_signed_error
       else
-        unless hasPermission?
-          logger.debug "[ACCESS] #{controller_name}##{action_name} -> User hasn't permission"
-          render_serialized _access_denied_error
-        else
-          logger.debug "[ACCESS] #{controller_name}##{action_name} -> Signed as #{current_user.login}"
-        end
+        logger.debug "[ACCESS] #{controller_name}##{action_name} -> Signed as #{current_user.login}"
       end
     else
       logger.debug "[ACCESS] #{controller_name}##{action_name} -> Public action"
     end
-  end
-
-  def hasPermission?
-    logger.debug "[ACCESS] #{controller_name}##{action_name} -> Checking permission"
-    return true
   end
   
   def public_actions
@@ -45,10 +35,6 @@ class Api::ApiController < ApplicationController
   private
     def _not_signed_error
       return ResponseWS.simple_error('api.session.not_allowed')
-    end
-
-    def _access_denied_error
-      return ResponseWS.simple_error('api.session.access_denied')
     end
     
     def get_fields(fields_s)

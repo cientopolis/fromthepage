@@ -22,16 +22,6 @@ class Api::WorkController < Api::ApiController
     return [:show,:show_pages]
   end
 
-  def hasPermission?
-    logger.debug "[ACCESS] #{controller_name}##{action_name} -> Checking permission"
-    if !current_user.owner
-      return false
-    elsif @work && !current_user.like_owner?(@work)
-      return false
-    end
-    return true
-  end
-
   def destroy
     @work.destroy
     # redirect_to dashboard_owner_path

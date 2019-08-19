@@ -2,7 +2,7 @@ class Api::DashboardController < Api::ApiController
 
   include AddWorkHelper
 
-  before_filter :authorized?, :only => [:owner,:ownerResponse ,:staging, :omeka, :startproject]
+  before_filter :authorized?, :only => [:owner, :staging, :omeka, :startproject]
   before_filter :get_data, :only => [:owner, :staging, :omeka, :upload, :new_upload, :startproject, :empty_work, :create_work]
 
 
@@ -18,19 +18,6 @@ class Api::DashboardController < Api::ApiController
     @document_sets = current_user.document_sets
     logger.debug("DEBUG: #{current_user.inspect}")
     response_serialized_object (@works)
-  end
-
-  def hasPermission?
-    logger.debug "[ACCESS] #{controller_name}##{action_name} -> Checking permission"
-    if current_user.owner
-      if @work
-        return @work.owner == current_user
-      else
-        return false
-      end
-    else
-      return false
-    end
   end
 
   #Public Dashboard - list of all collections
