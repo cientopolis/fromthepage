@@ -65,6 +65,7 @@ fr:
       error: "Erreur de serveur, réessayez plus tard."
     session:
       not_allowed: "Pour accéder à ce contenu, vous devez vous connecter"
+      access_denied: "Vous n'êtes pas autorisé à accéder à ce contenu."
     login:
       success: "Bienvenue sur Transcriptor!"
       fail: "Nom d'utilisateur ou mot de passe incorrect, réessayez."

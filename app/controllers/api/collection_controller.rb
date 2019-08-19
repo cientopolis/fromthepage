@@ -8,6 +8,14 @@ class Api::CollectionController < Api::ApiController
     return [:show,:show_works]
   end
   
+  def hasPermission?
+    logger.debug "[ACCESS] #{controller_name}##{action_name} -> Checking permission"
+    if @collection &&  !current_user.like_owner?(@collection)
+      return false
+    end
+    return true
+  end
+
   ### Endpoints Methods ###
   
   def create
