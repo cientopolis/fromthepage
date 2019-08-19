@@ -18,6 +18,19 @@ class Api::PageController < Api::ApiController
   #   end
   # end
 
+  def hasPermission?
+    logger.debug "[ACCESS] #{controller_name}##{action_name} -> Checking permission"
+    if user_signed_in? && current_user.owner
+      if @work
+        return unless @work.owner == current_user
+      else
+        return false
+      end
+    else
+      return false
+    end
+  end
+
   def public_actions
     return [:show]
   end
