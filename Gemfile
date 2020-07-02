@@ -93,6 +93,7 @@ gem 'json-ld'
 gem 'rdf'
 gem 'rdf-turtle'
 gem 'rdf-rdfa'
+gem 'sparql-client'
 
 
 # Use font awesome icons

@@ -63,11 +63,15 @@ class Api::TranscribeController  < Api::ApiController
   end
   
   def update_status
+    @page.status = nil
     if params[:page]['needs_review'] == '1'
       @page.status = Page::STATUS_NEEDS_REVIEW
     end
     if params[:page]['mark_blank'] == '1'
       @page.status = Page::STATUS_BLANK
+    end
+    if params[:page]['transcribed'] == '1'
+      @page.status = Page::STATUS_TRANSCRIBED
     end
   end
 
@@ -84,9 +88,9 @@ class Api::TranscribeController  < Api::ApiController
       alert = nil
       message = log_transcript_attempt
       #leave the status alone if it's needs review, but otherwise set it to transcribed
-      unless @page.status == Page::STATUS_NEEDS_REVIEW
-        @page.status = Page::STATUS_TRANSCRIBED
-      end
+      # unless @page.status == Page::STATUS_NEEDS_REVIEW
+      #   @page.status = Page::STATUS_TRANSCRIBED
+      # end
       update_status
       begin
         if @page.save

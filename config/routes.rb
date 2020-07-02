@@ -147,6 +147,7 @@ Fromthepage::Application.routes.draw do
     
     match '/schemaorg/:type', as: :get_schema_type, to: 'schema_org#get_schema_type', via: [:get]
     match '/schemaorg/config/tree', as: :get_schema_config, to: 'schema_org#get_schema_config', via: [:get]
+    match '/semantic_ontology/list_classes', as: :list_classes, to: 'semantic_ontology#list_classes', via: [:get,:post]
   end
 
   match '/:controller(/:action(/:id))', via: [:get, :post]

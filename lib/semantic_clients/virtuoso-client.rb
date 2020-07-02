@@ -3,6 +3,7 @@ require_relative '../schema_helper'
 require "base64"
 require 'json/ld'
 require 'rdf/turtle'
+require 'sparql/client'
 
 class VirtuosoClient
 
@@ -117,6 +118,34 @@ class VirtuosoClient
     (entity = response["data"].body) ? rdfToJsonld(entity, "transcriptor:#{idSemanticContribution}", true) : nil
   end
 
+  def list_classes(parent = nil)
+    begin
+      results = []
+      sparql = SPARQL::Client.new("#{@host}/sparql", { graph: "http://schema.org" })
+      parentFilter = parent ? "?classId rdfs:subClassOf #{formatId(parent)} ." : "FILTER NOT EXISTS { ?classId rdfs:subClassOf ?parentClass . }"
+      query = sparql.query("
+      select ?label ?comment ?classId
+      from <http://schema.org>
+      where {
+        ?classId rdfs:label ?label.
+        ?classId rdfs:comment ?comment.
+        ?classId rdf:type rdfs:Class.
+        FILTER NOT EXISTS {
+          ?classId rdf:type schema:DataType
+        }.
+        #{parentFilter}
+      }")
+      query&.each_solution do |solution|
+        results.push({ id: solution[:classId].value, label: solution[:label].value, comment: solution[:comment].value})
+      end
+      return results
+    rescue => exception
+      puts exception.inspect
+      return []
+    end
+
+  end
+
   private
     def do_query(query, format = "text/plain", serialize_reponse_format = format)
       httpClient = HttpClient.new(@host, {}, serialize_reponse_format)
@@ -216,5 +245,9 @@ class VirtuosoClient
 
     def getTranscriptorReference(stringReference)
       stringReference.gsub(/<|>/, '').gsub(@graph + "/", 'transcriptor:')
+    end
+
+    def formatId(id)
+      id.match(/https?:\/\/[\S]+/) ? "<#{id}>" : id
     end
 end
