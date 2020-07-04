@@ -33,8 +33,16 @@ class SemanticHelper
     semanticClient.describeSemanticContributionEntity(idSemanticContribution, useDefaultGraph)
   end
 
-  def self.list_classes(parent = nil)
-    semanticClient.list_classes(parent)
+  def self.list_classes(ontology_id, parent = nil)
+    semanticClient.list_classes(ontology_id, parent)
+  end
+
+  def self.list_properties(class_id)
+    semanticClient.list_properties(class_id)
+  end
+
+  def self.list_relations(class_id)
+    semanticClient.list_relations(class_id)
   end
 
   def self.semanticClient

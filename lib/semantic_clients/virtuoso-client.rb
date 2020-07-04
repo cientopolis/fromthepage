@@ -118,20 +118,20 @@ class VirtuosoClient
     (entity = response["data"].body) ? rdfToJsonld(entity, "transcriptor:#{idSemanticContribution}", true) : nil
   end
 
-  def list_classes(parent = nil)
+  def list_classes(ontology_id, parent = nil)
     begin
+      ontology = Ontology.find_by(ontology_id ? { :id => ontology_id } : getOntologyFindCondition(parent))
       results = []
-      sparql = SPARQL::Client.new("#{@host}/sparql", { graph: "http://schema.org" })
+      sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
       parentFilter = parent ? "?classId rdfs:subClassOf #{formatId(parent)} ." : "FILTER NOT EXISTS { ?classId rdfs:subClassOf ?parentClass . }"
       query = sparql.query("
       select ?label ?comment ?classId
-      from <http://schema.org>
       where {
         ?classId rdfs:label ?label.
         ?classId rdfs:comment ?comment.
         ?classId rdf:type rdfs:Class.
         FILTER NOT EXISTS {
-          ?classId rdf:type schema:DataType
+          ?classId rdf:type #{ontology.literal_type}
         }.
         #{parentFilter}
       }")
@@ -145,6 +145,60 @@ class VirtuosoClient
     end
 
   end
+
+  def list_properties(class_id)
+    begin
+      ontology = Ontology.find_by(getOntologyFindCondition(class_id))
+      sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
+      literal_properties_filter = ontology.literal_filter
+      results = []
+      query = sparql.query("
+      select ?property ?type ?label ?comment
+      where {
+          #{formatId(class_id)} rdfs:subClassOf* ?class .
+          ?property #{ontology.domainkey} ?class .
+          ?property rdfs:label ?label .
+          ?property rdfs:comment ?comment .
+          ?property #{ontology.rangekey} ?type .
+          #{literal_properties_filter}
+      }
+      ")
+      query&.each_solution do |solution|
+        results.push({ property: solution[:property].value, type: solution[:type].value, label: solution[:label].value, comment: solution[:comment].value})
+      end
+      return results
+    rescue => exception
+      puts exception.inspect
+      return []
+    end
+  end
+
+  def list_relations(class_id)
+    begin
+      ontology = Ontology.find_by(getOntologyFindCondition(class_id))
+      sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
+      relation_properties_filter = ontology.relation_filter
+      results = []
+      query = sparql.query("
+      select ?property ?type ?label ?comment
+      where {
+          #{formatId(class_id)} rdfs:subClassOf* ?class .
+          ?property #{ontology.domainkey} ?class .
+          ?property rdfs:label ?label .
+          ?property rdfs:comment ?comment .
+          ?property #{ontology.rangekey} ?type .
+          #{relation_properties_filter}
+      }")
+      query&.each_solution do |solution|
+        results.push({ property: solution[:property].value, type: solution[:type].value, label: solution[:label].value, comment: solution[:comment].value})
+      end
+      return results
+    rescue => exception
+      puts exception.inspect
+      return []
+    end
+  end
+
 
   private
     def do_query(query, format = "text/plain", serialize_reponse_format = format)
@@ -249,5 +303,13 @@ class VirtuosoClient
 
     def formatId(id)
       id.match(/https?:\/\/[\S]+/) ? "<#{id}>" : id
+    end
+
+    def getOntologyFindCondition(id)
+      id.match(/https?:\/\/[\S]+/) ? { :url => id[/.*\//].chop } : { :prefix => id.split(':').first }
+    end
+
+    def splitOntologyFromId(id)
+      id.match(/https?:\/\/[\S]+/) ? id[/.*\//].chop : id.split(':').first
     end
 end

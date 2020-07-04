@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200701183201) do
+ActiveRecord::Schema.define(version: 20200704073937) do
 
   create_table "ahoy_events", force: :cascade do |t|
     t.integer  "visit_id",   limit: 4
@@ -368,13 +368,15 @@ ActiveRecord::Schema.define(version: 20200701183201) do
   end
 
   create_table "ontologies", force: :cascade do |t|
-    t.string   "name",        limit: 255
-    t.string   "description", limit: 255
-    t.string   "domainkey",   limit: 255
-    t.string   "url",         limit: 255
-    t.datetime "created_at",              null: false
-    t.datetime "updated_at",              null: false
-    t.string   "prefix",      limit: 255
+    t.string   "name",         limit: 255
+    t.string   "description",  limit: 255
+    t.string   "domainkey",    limit: 255
+    t.string   "url",          limit: 255
+    t.datetime "created_at",               null: false
+    t.datetime "updated_at",               null: false
+    t.string   "prefix",       limit: 255
+    t.string   "rangekey",     limit: 255
+    t.string   "literal_type", limit: 255
   end
 
   create_table "page_article_links", force: :cascade do |t|
