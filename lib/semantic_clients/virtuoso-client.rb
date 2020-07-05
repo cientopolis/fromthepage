@@ -153,7 +153,7 @@ class VirtuosoClient
       literal_properties_filter = ontology.literal_filter
       results = []
       query = sparql.query("
-      select ?property ?type ?label ?comment
+      select ?property ?label ?comment (group_concat(?type;separator=',') as ?types)
       where {
           #{formatId(class_id)} rdfs:subClassOf* ?class .
           ?property #{ontology.domainkey} ?class .
@@ -162,9 +162,9 @@ class VirtuosoClient
           ?property #{ontology.rangekey} ?type .
           #{literal_properties_filter}
       }
-      ")
+      group by ?property ?label ?comment")
       query&.each_solution do |solution|
-        results.push({ property: solution[:property].value, type: solution[:type].value, label: solution[:label].value, comment: solution[:comment].value})
+        results.push({ property: solution[:property].value, types: solution[:types].value.split(','), label: solution[:label].value, comment: solution[:comment].value})
       end
       return results
     rescue => exception
@@ -180,7 +180,7 @@ class VirtuosoClient
       relation_properties_filter = ontology.relation_filter
       results = []
       query = sparql.query("
-      select ?property ?type ?label ?comment
+      select ?property ?label ?comment (group_concat(?type;separator=',') as ?types)
       where {
           #{formatId(class_id)} rdfs:subClassOf* ?class .
           ?property #{ontology.domainkey} ?class .
@@ -188,9 +188,10 @@ class VirtuosoClient
           ?property rdfs:comment ?comment .
           ?property #{ontology.rangekey} ?type .
           #{relation_properties_filter}
-      }")
+      }
+      group by ?property ?label ?comment")
       query&.each_solution do |solution|
-        results.push({ property: solution[:property].value, type: solution[:type].value, label: solution[:label].value, comment: solution[:comment].value})
+        results.push({ property: solution[:property].value, types: solution[:types].value.split(','), label: solution[:label].value, comment: solution[:comment].value})
       end
       return results
     rescue => exception
