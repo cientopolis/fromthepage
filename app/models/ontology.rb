@@ -1,5 +1,7 @@
 class Ontology < ActiveRecord::Base
     before_validation :set_default_params
+    has_many :ontology_datatypes
+    accepts_nested_attributes_for :ontology_datatypes, allow_destroy: true
 
     def set_default_params
         self.literal_type = self.literal_type || 'rdfs:Literal'
