@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200704073937) do
+ActiveRecord::Schema.define(version: 20200705035103) do
 
   create_table "ahoy_events", force: :cascade do |t|
     t.integer  "visit_id",   limit: 4
@@ -379,6 +379,14 @@ ActiveRecord::Schema.define(version: 20200704073937) do
     t.string   "literal_type", limit: 255
   end
 
+  create_table "ontology_datatypes", force: :cascade do |t|
+    t.string  "semantic_class", limit: 255
+    t.string  "internal_type",  limit: 255
+    t.integer "ontology_id",    limit: 4
+  end
+
+  add_index "ontology_datatypes", ["ontology_id"], name: "index_ontology_datatypes_on_ontology_id", using: :btree
+
   create_table "page_article_links", force: :cascade do |t|
     t.integer  "page_id",      limit: 4
     t.integer  "article_id",   limit: 4
@@ -690,4 +698,5 @@ ActiveRecord::Schema.define(version: 20200704073937) do
   add_index "works", ["slug"], name: "index_works_on_slug", unique: true, using: :btree
 
   add_foreign_key "marks", "layers"
+  add_foreign_key "ontology_datatypes", "ontologies"
 end
