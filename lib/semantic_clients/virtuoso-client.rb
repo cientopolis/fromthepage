@@ -13,17 +13,18 @@ class VirtuosoClient
     @graph = ENV['VIRTUOSO_GRAPH']
     @user = ENV['VIRTUOSO_USER']
     @password = ENV['VIRTUOSO_PASSWORD']
+    @isql_path = ENV['VIRTUOSO_ISQL_PATH'] | "#{Dir.pwd}/bin/isql"
   end
 
   def insert(jsonld_string)
+    # "Authorization": "Basic " + Base64.strict_encode64(@user + ":" + @password),
       headers = {
-          "Authorization": "Basic " + Base64.strict_encode64(@user + ":" + @password),
           "Content-Type": "application/sparql-query"
       }
       httpClient = HttpClient.new(@host, headers, 'raw')
       rdf_string = jsonldToRdf(jsonld_string)
       query = "INSERT IN GRAPH <#{ @graph }> { #{rdf_string} }"
-      httpClient.do_post(@collection, {}, query)
+      do_query(query)
   end
 
   def listSemanticContributions(filter = {})
@@ -146,9 +147,9 @@ class VirtuosoClient
 
   end
 
-  def list_properties(class_id)
+  def list_properties(class_id, ontology_id = nil)
     begin
-      ontology = Ontology.find_by(getOntologyFindCondition(class_id))
+      ontology = Ontology.find_by(getOntologyFindCondition(class_id, ontology_id))
       sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
       literal_properties_filter = ontology.literal_filter
       results = []
@@ -173,9 +174,9 @@ class VirtuosoClient
     end
   end
 
-  def list_relations(class_id)
+  def list_relations(class_id, ontology_id = nil)
     begin
-      ontology = Ontology.find_by(getOntologyFindCondition(class_id))
+      ontology = Ontology.find_by(getOntologyFindCondition(class_id, ontology_id))
       sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
       relation_properties_filter = ontology.relation_filter
       results = []
@@ -200,6 +201,18 @@ class VirtuosoClient
     end
   end
 
+  def upload_ontology(ontology)
+    url = ERB::Util.url_encode(ontology.url)
+    # %x{ curl --digest --user "#{@user}":"#{@password}" --verbose --url "\"#{@host}\"/sparql-graph-crud-auth?graph-uri=\"#{url}\"" -T "#{ontology.graph_file.current_path}" }
+    configure_ontology(ontology)
+  end
+
+  def configure_ontology(ontology)
+    # create prefix
+    puts "about to change prefix on virtuoso\n"
+    isql_host = URI.parse(@host)
+    %x{ "#{@isql_path}" "#{isql_host.host}":1111 "#{@user}" "#{@password}" exec="DB.DBA.XML_SET_NS_DECL ('\"#{ontology.prefix}\"', '\"#{ontology.url}\"', 2);" }
+  end
 
   private
     def do_query(query, format = "text/plain", serialize_reponse_format = format)
@@ -306,8 +319,14 @@ class VirtuosoClient
       id.match(/https?:\/\/[\S]+/) ? "<#{id}>" : id
     end
 
-    def getOntologyFindCondition(id)
-      id.match(/https?:\/\/[\S]+/) ? { :url => id[/.*\//].chop } : { :prefix => id.split(':').first }
+    def getOntologyFindCondition(id, ontology_id)
+      if ontology_id != nil
+        { :id => ontology_id }
+      elsif id.match(/https?:\/\/[\S]+/)
+         { :url => id[/.*\//].chop }
+      else
+        { :prefix => id.split(':').first }
+      end
     end
 
     def splitOntologyFromId(id)

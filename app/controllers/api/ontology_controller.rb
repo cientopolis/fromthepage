@@ -12,7 +12,11 @@ class Api::OntologyController < Api::ApiController
     end
 
     def update
-        @ontology.update_attributes(ontology_params)
+        @ontology.update_attributes(ontology_params.except(:graph_file))
+        if (params[:ontology][:graph_file] != nil && params[:ontology][:graph_file].instance_of?(ActionDispatch::Http::UploadedFile))
+            @ontology.update(graph_file: params[:ontology][:graph_file])
+            @ontology.upload_to_store
+        end
         render_serialized ResponseWS.ok("api.ontology.update.success",@ontology)
     end
 
@@ -34,6 +38,6 @@ class Api::OntologyController < Api::ApiController
         end
 
         def ontology_params
-            params[:ontology].permit(:name,:description,:url,:domainkey,:rangekey,:prefix,:literal_type, {:ontology_datatypes_attributes => [:id, :semantic_class, :internal_type, :_destroy]})
+            params[:ontology].permit(:name,:description,:url,:domainkey,:rangekey,:prefix,:literal_type, {:ontology_datatypes_attributes => [:id, :semantic_class, :internal_type, :_destroy]}, :graph_file)
         end
 end

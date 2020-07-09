@@ -13,11 +13,11 @@ class Api::SemanticOntologyController < Api::ApiController
   end
 
   def list_properties
-    response_serialized_object SemanticHelper.list_properties(params[:class])
+    response_serialized_object SemanticHelper.list_properties(params[:class], params[:ontology_id])
   end  
   
   def list_relations
-    response_serialized_object SemanticHelper.list_relations(params[:class])
+    response_serialized_object SemanticHelper.list_relations(params[:class], params[:ontology_id])
   end
 
 end
