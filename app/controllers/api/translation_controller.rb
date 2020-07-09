@@ -18,6 +18,7 @@ class Api::TranslationController < Api::ApiController
 
   def create
     @translation = Translation.new(translation_params)
+    @translation.slug = SecureRandom.uuid
     if @mark
       @translation.mark = @mark
     end
