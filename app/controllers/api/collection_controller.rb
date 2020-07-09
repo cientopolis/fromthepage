@@ -75,7 +75,11 @@ class Api::CollectionController < Api::ApiController
   end
   
   def list_own 
-    @collections = current_user.all_owner_collections
+    begin
+      @collections = current_user.all_owner_collections
+    rescue => exception
+      @collections = []
+    end
     response_serialized_object @collections
   end
   
