@@ -38,6 +38,6 @@ class Api::OntologyController < Api::ApiController
         end
 
         def ontology_params
-            params[:ontology].permit(:name,:description,:url,:domainkey,:rangekey,:prefix,:literal_type, {:ontology_datatypes_attributes => [:id, :semantic_class, :internal_type, :_destroy]}, :graph_file)
+            params[:ontology].permit(:name,:description,:url,:domainkey,:rangekey,:prefix,:literal_type, :class_type, {:ontology_datatypes_attributes => [:id, :semantic_class, :internal_type, :_destroy]}, :graph_file)
         end
 end

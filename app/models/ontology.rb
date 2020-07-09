@@ -9,6 +9,7 @@ class Ontology < ActiveRecord::Base
         self.literal_type = self.literal_type || 'rdfs:Literal'
         self.domainkey = self.domainkey || 'rdfs:domain'
         self.rangekey = self.rangekey || 'rdfs:range'
+        self.class_type = self.class_type || 'rdfs:Class'
     end
 
     def is_typed_literals

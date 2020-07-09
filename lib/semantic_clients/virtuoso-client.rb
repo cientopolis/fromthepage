@@ -125,17 +125,19 @@ class VirtuosoClient
       results = []
       sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
       parentFilter = parent ? "?classId rdfs:subClassOf #{formatId(parent)} ." : "FILTER NOT EXISTS { ?classId rdfs:subClassOf ?parentClass . }"
-      query = sparql.query("
+      statement = "
       select ?label ?comment ?classId
       where {
         ?classId rdfs:label ?label.
         ?classId rdfs:comment ?comment.
-        ?classId rdf:type rdfs:Class.
+        ?classId rdf:type #{ontology.class_type}.
         FILTER NOT EXISTS {
           ?classId rdf:type #{ontology.literal_type}
         }.
         #{parentFilter}
-      }")
+      }"
+      puts statement
+      query = sparql.query(statement)
       query&.each_solution do |solution|
         results.push({ id: solution[:classId].value, label: solution[:label].value, comment: solution[:comment].value})
       end
@@ -203,7 +205,7 @@ class VirtuosoClient
 
   def upload_ontology(ontology)
     url = ERB::Util.url_encode(ontology.url)
-    # %x{ curl --digest --user "#{@user}":"#{@password}" --verbose --url "\"#{@host}\"/sparql-graph-crud-auth?graph-uri=\"#{url}\"" -T "#{ontology.graph_file.current_path}" }
+    %x{ curl --digest --user "#{@user}":"#{@password}" --verbose --url "\"#{@host}\"/sparql-graph-crud-auth?graph-uri=\"#{url}\"" -T "#{ontology.graph_file.current_path}" }
     configure_ontology(ontology)
   end
 
