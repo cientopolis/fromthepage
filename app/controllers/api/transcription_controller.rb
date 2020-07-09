@@ -46,6 +46,7 @@ class Api::TranscriptionController < Api::ApiController
 
   def create
     @transcription = Transcription.new(transcription_params)
+    @transcription.slug = SecureRandom.uuid
     if @mark
       @transcription.mark = @mark
     end
