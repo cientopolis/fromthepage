@@ -37,12 +37,16 @@ class SemanticHelper
     semanticClient.list_classes(ontology_id, parent)
   end
 
-  def self.list_properties(class_id)
-    semanticClient.list_properties(class_id)
+  def self.list_properties(class_id, ontology_id = nil)
+    semanticClient.list_properties(class_id, ontology_id)
   end
 
-  def self.list_relations(class_id)
-    semanticClient.list_relations(class_id)
+  def self.list_relations(class_id, ontology_id = nil)
+    semanticClient.list_relations(class_id, ontology_id)
+  end
+
+  def self.upload_ontology(ontology)
+    semanticClient.upload_ontology(ontology)
   end
 
   def self.semanticClient
