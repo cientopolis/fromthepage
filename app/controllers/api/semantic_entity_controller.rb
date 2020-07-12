@@ -11,11 +11,11 @@ class Api::SemanticEntityController < Api::ApiController
   end
 
   def show
-    if (!params[:is_contribution]) {
+    if (!params[:is_contribution])
       response_serialized_object SemanticHelper.describeEntity(params[:entity_id], params[:use_default_schema])
-    } else {
+    else
       response_serialized_object SemanticHelper.describeSemanticContributionEntity(params[:entity_id], params[:use_default_schema])
-    }
+    end
   end
 
   private
