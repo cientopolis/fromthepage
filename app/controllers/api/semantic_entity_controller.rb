@@ -11,8 +11,11 @@ class Api::SemanticEntityController < Api::ApiController
   end
 
   def show
-    params.permit(:entity_id, :use_default_schema)
-    response_serialized_object SemanticHelper.describeEntity(params[:entity_id], params[:use_default_schema])
+    if (!params[:is_contribution]) {
+      response_serialized_object SemanticHelper.describeEntity(params[:entity_id], params[:use_default_schema])
+    } else {
+      response_serialized_object SemanticHelper.describeSemanticContributionEntity(params[:entity_id], params[:use_default_schema])
+    }
   end
 
   private
