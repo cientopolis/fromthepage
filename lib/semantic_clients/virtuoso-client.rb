@@ -110,13 +110,21 @@ class VirtuosoClient
     query = "
         #{ getPrefixes() }
 
-        DESCRIBE ?mainEntityId
+        DESCRIBE ?mainEntityId ?p ?q
         WHERE {
-          <#{idSemanticContributionQuery}> <http://schema.org/mainEntity> ?mainEntityId.
+          <#{idSemanticContributionQuery}> <http://schema.org/mainEntity> ?mainEntityId .
+          ?mainEntityId ?p ?q .
         }
     "
     response = do_query(query)
-    (entity = response["data"].body) ? rdfToJsonld(entity, "transcriptor:#{idSemanticContribution}", true) : nil
+    semanticContribution = (entity = response["data"].body) ? compressEntityRelations(rdfToJsonld(entity, idSemanticContribution), idSemanticContribution) : nil
+    entityId = semanticContribution ? semanticContribution['schema:mainEntity']['@id'] : nil
+    if entityId
+      entityId = entityId.split(':').last
+      return (entity = response["data"].body) ? compressEntityRelations(rdfToJsonld(entity, entityId), entityId) : nil
+    end
+    return nil
+    # (entity = response["data"].body) ? rdfToJsonld(entity, "transcriptor:#{idSemanticContribution}", true) : nil
   end
 
   def list_classes(ontology_id, parent = nil)
