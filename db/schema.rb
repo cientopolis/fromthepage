@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200709074659) do
+ActiveRecord::Schema.define(version: 20200711182910) do
 
   create_table "ahoy_events", force: :cascade do |t|
     t.integer  "visit_id",   limit: 4
@@ -135,6 +135,7 @@ ActiveRecord::Schema.define(version: 20200709074659) do
     t.datetime "updated_at"
     t.string   "schema_type",           limit: 255
     t.string   "slug",                  limit: 255
+    t.string   "label",                 limit: 255
   end
 
   add_index "contributions", ["mark_id"], name: "index_contributions_on_mark_id", using: :btree

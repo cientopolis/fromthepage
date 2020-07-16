@@ -27,6 +27,7 @@ class Mark < ActiveRecord::Base
     if(args[:semantic_text])
       self.semanticContribution = SemanticContribution.new({text: args[:semantic_text], schema_type: args[:schema_type]})
       self.semanticContribution.slug = args[:contribution_slug]
+      self.semanticContribution.label = args[:label]
       self.semanticContribution.mark = self
       self.semanticContribution.user = user
     end
