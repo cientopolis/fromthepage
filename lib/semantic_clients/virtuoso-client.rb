@@ -71,7 +71,7 @@ class VirtuosoClient
   def listEntities(filter)
     matchedEntityTypes = getEntityTypes(filter)
     sanitizedFilter = sanitizeFilter(filter)
-    defaultTypeFilter = "FILTER (?entityDefaultType IN (#{ getEntityTypes({"entityType" => 'schema:Thing', "hierarchical" => true}).join(',') })) "
+    # defaultTypeFilter = "FILTER (?entityDefaultType IN (#{ getEntityTypes({"entityType" => 'schema:Thing', "hierarchical" => true}).join(',') })) "
     entityType = (matchedEntityTypes != nil) ? "FILTER (?entityType IN (#{ matchedEntityTypes.join(',') }) && ?entityType != schema:NoteDigitalDocument) " : "FILTER (?entityType != schema:NoteDigitalDocument) "
     propertyValue = (sanitizedFilter['labelValue'] != nil) ? "FILTER regex(?entityLabel, #{ sanitizedFilter['labelValue'] }, 'i') " : ''
     limit = (sanitizedFilter['limit']  != nil) ? "LIMIT #{ sanitizedFilter['limit'] }" : ''
@@ -81,11 +81,11 @@ class VirtuosoClient
         SELECT DISTINCT ?entityId, ?entityType, ?entityLabel
         WHERE {
             ?entityId rdf:type ?entityType #{ entityType }.
-            ?entityId rdf:type ?entityDefaultType #{ defaultTypeFilter }.
             ?entityId rdfs:label ?entityLabel #{ propertyValue }.
         }
         #{limit}
     "
+    # ?entityId rdf:type ?entityDefaultType #{ defaultTypeFilter }.
     do_query(query, 'json')&.results || { :bindings => [] }
   end
 
@@ -127,12 +127,14 @@ class VirtuosoClient
     # (entity = response["data"].body) ? rdfToJsonld(entity, "transcriptor:#{idSemanticContribution}", true) : nil
   end
 
-  def list_classes(ontology_id, parent = nil)
+  def list_classes(ontology_id, parent = nil, include_parent = false)
     begin
-      ontology = Ontology.find_by(ontology_id ? { :id => ontology_id } : getOntologyFindCondition(parent))
+      # ontology = Ontology.find_by(ontology_id ? { :id => ontology_id } : getOntologyFindCondition(parent))
+      ontology = getOntology(ontology_id, parent)
       results = []
       sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
-      parentFilter = parent ? "?classId rdfs:subClassOf #{formatId(parent)} ." : "FILTER NOT EXISTS { ?classId rdfs:subClassOf ?parentClass . }"
+      parentInclusionFilter = include_parent ? '*' : ''
+      parentFilter = parent ? "?classId rdfs:subClassOf#{parentInclusionFilter} #{formatId(parent)} ." : "FILTER NOT EXISTS { ?classId rdfs:subClassOf ?parentClass . }"
       statement = "
       select ?label ?comment ?classId
       where {
@@ -226,6 +228,7 @@ class VirtuosoClient
 
   private
     def do_query(query, format = "text/plain", serialize_reponse_format = format)
+      puts("About to run the next SPARQL statement =>\n", query)
       httpClient = HttpClient.new(@host, {}, serialize_reponse_format)
       httpClient.do_post('/sparql', {}, {"query" => query, "default-graph-uri" => @graph, "format" => format })
     end
@@ -308,11 +311,12 @@ class VirtuosoClient
 
     def getEntityTypes(filter)
       if(filter['entityType'])
-        matchedEntityType = SchemaHelper.getFullTypeHierarchy(filter['entityType'])
-        if(matchedEntityType)
-          return filter['hierarchical'] ? matchedEntityType : [filter['entityType']]
+        classes = list_classes(nil, filter['entityType'], true)
+        if classes
+          return filter['hierarchical'] ? classes.map { |entity| formatId(entity[:id]) } : [filter['entityType']]
+        else
+          return nil
         end
-        return nil
       end
       return nil
     end
@@ -336,6 +340,17 @@ class VirtuosoClient
          { :url => id[/.*\//].chop }
       else
         { :prefix => id.split(':').first }
+      end
+    end
+
+    def getOntology(ontology_id, entity_id)
+      ontologies = Ontology.all
+      if ontology_id != nil
+        ontologies.find { |ontology| ontology.id == ontology_id }
+      elsif entity_id.match(/https?:\/\/[\S]+/)
+        ontologies.find { |ontology| entity_id.match(ontology.url) }
+      else
+        ontologies.find { |ontology| ontology.prefix == entity_id.split(':').first }
       end
     end
 
