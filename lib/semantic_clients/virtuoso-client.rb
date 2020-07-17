@@ -29,27 +29,49 @@ class VirtuosoClient
 
   def listSemanticContributions(filter = {})
     # sanitize with ActiveRecord::Base::sanitize_sql(string)
-    sanitizedFilter = sanitizeFilter(filter)
-    entityType = (sanitizedFilter['entityType'] != nil) ? "FILTER (?entityType = #{ filter['entityType'] }) " : ''
-    propertyValue = (sanitizedFilter['propertyValue'] != nil) ? "FILTER regex(?propertyValue, '#{ getSchemaReference(filter['propertyValue']) }', 'i') " : ''
-    includeMatchedProperties = filter['includeMatchedProperties'] 
-    query = "
-        #{ getPrefixes() }
+    begin
+      sanitizedFilter = sanitizeFilter(filter)
+      entityType = (sanitizedFilter['entityType'] != nil) ? "FILTER (?entityType = #{ formatId(filter['entityType']) }) ." : ''
+      includeMatchedProperties = filter['includeMatchedProperties']
+      findInPropertyNameAndValue = filter['findInPropertyNameAndValue'] == true
+      conditions = [
+        {'propertyValue': "regex(?propertyValue, '#{ filter['propertyValue'] }', 'i')"},
+        {'propertyName': "regex(?entityMatchingProperty, '#{ filter['propertyName'] }', 'i')"}
+      ]
+      statement = "
+          #{ getPrefixes() }
 
-        SELECT DISTINCT ?idNote ?entityType ?idMainEntity #{ includeMatchedProperties ? '?entityMatchingProperty' : '' }
-        WHERE {
-          ?idNote rdf:type schema:NoteDigitalDocument .
-          ?idNote schema:mainEntity ?idMainEntity .
-          ?idMainEntity rdf:type ?entityType #{ entityType }.
-          ?idMainEntity ?entityMatchingProperty ?propertyValue #{ propertyValue }.
-        }
-    "
-    queryResult = do_query(query, 'json')
-    if queryResult
-      return queryResult.results
-    else
-      return { :bindings => [] }
+          SELECT DISTINCT ?idNote ?entityType ?idMainEntity #{ includeMatchedProperties ? "(group_concat(?entityMatchingProperty;separator=',') as ?entityMatchingProperties)": '' }
+          WHERE {
+            ?idNote rdf:type schema:NoteDigitalDocument .
+            ?idNote schema:mainEntity ?idMainEntity .
+            ?idMainEntity rdf:type ?entityType .
+            ?idMainEntity ?entityMatchingProperty ?propertyValue .
+            #{ entityType }
+            #{constructFilters(filter, conditions, findInPropertyNameAndValue)}
+          }
+          group by ?idNote ?entityType ?idMainEntity
+      "
+      return execute_sparql(statement)
+    rescue => exception
+      puts exception.inspect
+      return []
     end
+  end
+
+  def constructFilters(receivedFilters, conditions, andConditions = false)
+    operator = andConditions ? '&&' : '||'
+    conditions = conditions.select { |condition| receivedFilters[condition.keys[0]] != nil }
+    filter = conditions.reduce("") { |filter, condition| filter = addFilterCondition(filter, condition, operator) }
+    closeFilterStatement(filter)
+  end
+
+  def addFilterCondition(filter, condition, operator)
+    filter == '' ? "FILTER(#{condition.values[0]}" : "#{filter} #{operator} #{condition.values[0]}" 
+  end
+
+  def closeFilterStatement(filter)
+    filter == "" ? "" : filter + ") ."
   end
 
   def listSemanticContributionsByEntity(filter = {})
@@ -269,10 +291,12 @@ class VirtuosoClient
     end
 
     def getPrefixes()
-      " PREFIX schema: <http://schema.org/>
+      prefixes = (Ontology.all.map { |ontology| "PREFIX #{ontology.prefix}: <#{ontology.url}>" }).join("\n")
+      " 
         PREFIX transcriptor: <#{ @graph }/>
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        #{prefixes}
       "
     end
 
@@ -321,9 +345,9 @@ class VirtuosoClient
       return nil
     end
 
-    def getSchemaReference(stringReference)
-      stringReference.gsub(/<|>/, '').gsub(/http:\/\/schema.org\//, 'schema:')
-    end
+    # def getSchemaReference(stringReference)
+    #   stringReference.gsub(/<|>/, '').gsub(/http:\/\/schema.org\//, 'schema:')
+    # end
 
     def getTranscriptorReference(stringReference)
       stringReference.gsub(/<|>/, '').gsub(@graph + "/", 'transcriptor:')
@@ -356,5 +380,25 @@ class VirtuosoClient
 
     def splitOntologyFromId(id)
       id.match(/https?:\/\/[\S]+/) ? id[/.*\//].chop : id.split(':').first
+    end
+
+    def execute_sparql(statement, graph = @graph)
+      begin
+        puts("About to run the next SPARQL statement =>\n", statement)
+        results = []
+        sparql = SPARQL::Client.new("#{@host}/sparql", { graph: graph })
+        query = sparql.query(statement)
+        query&.each_solution do |solution|
+          result = {}
+          solution.each do |name, solutionValue|
+            result[name] =  solutionValue.value
+          end
+          results.push(result)
+        end
+        return results
+      rescue => exception
+        puts exception.inspect
+        return []
+      end
     end
 end

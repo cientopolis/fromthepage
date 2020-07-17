@@ -2,13 +2,14 @@ class Api::SearchController < Api::ApiController
 
   include ApplicationHelper
 
+  before_action :set_search_filter, only: [:list_semantic_references, :list_semantic_references_by_properties]
+
   def public_actions
-    return [:login, :list_semantic_references]
+    return [:list_semantic_references, :list_semantic_references_by_properties]
   end
 
   def list_semantic_references
-    params.permit(:filter)
-    entities = SemanticHelper.listSemanticContributionsByEntity(params[:filter] || {})&.bindings || []
+    entities = SemanticHelper.listSemanticContributionsByEntity(@filter)&.bindings || []
     entityIDs = entities.map{ |entity| entity.idNote&.value&.split('/').last }
     info = SemanticContribution.select(
         'collections.id AS `collectionId`','collections.title AS `collectionTitle`',
@@ -19,6 +20,10 @@ class Api::SearchController < Api::ApiController
     info = getSemanticReferencesData(info)
     response_data = { referenced_slugs: entityIDs, references: info }
     response_serialized_object response_data
+  end
+
+  def list_semantic_references_by_properties
+    response_serialized_object SemanticHelper.listSemanticContributions(@filter)
   end
 
   private
@@ -32,5 +37,11 @@ class Api::SearchController < Api::ApiController
         semanticReferences.push(semanticReferenceHash)
       end
       return semanticReferences
+    end
+
+  private
+    def set_search_filter
+      params.permit(:filter)
+      @filter = params[:filter] || {}
     end
 end
