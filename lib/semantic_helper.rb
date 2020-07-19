@@ -12,7 +12,7 @@ class SemanticHelper
   
   ## Lists semantic contributions matching filters: type and propertyValue(if someone match) ##
   def self.listSemanticContributions(data = {})
-    semanticClient.listSemanticContributions(data)
+    semanticClient.listSemanticContributions(buildFilterIfRequested(data, ['propertyValue','propertyName','entityTypeLike']))
   end
   
   ## Lists semantic contributions matching entityId ##
@@ -65,4 +65,29 @@ class SemanticHelper
     end
   end
 
+  def self.createFilterFrom(query)
+    if(query.gsub(/(([^\,\+]+:[^\,\+]+)([\,\+]))*([^\,\+]+:[^\,\+]+)/, '').length == 0)
+      conditionSeparator=','
+      incrementalSeparator='+'
+      fieldValueSeparator=':'
+      return query.split(conditionSeparator).map { |condition| condition.split(incrementalSeparator).map { |keyValueString| {keyValueString.split(fieldValueSeparator)[0] => keyValueString.split(fieldValueSeparator)[1]} } }
+    end
+    return []
+  end
+
+  def self.buildFilterIfRequested(filter, defaultKeys = [])
+    filter['searchQueryConditions'] = []
+    filter['searchQuery'] = filter['searchQuery']&.strip
+    if(filter['searchQuery'])
+      searchQueryConditions = createFilterFrom(filter['searchQuery'])
+      if(searchQueryConditions.length > 0)
+        filter['searchQueryConditions'] = searchQueryConditions
+      else
+        for defaultKey in defaultKeys do
+          filter[defaultKey] = filter['searchQuery']
+        end
+      end
+    end
+    return filter
+  end
 end

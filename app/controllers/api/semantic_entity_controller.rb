@@ -14,7 +14,9 @@ class Api::SemanticEntityController < Api::ApiController
     if (params[:is_contribution] && params[:is_contribution] == 'true')
       response_serialized_object SemanticHelper.describeSemanticContributionEntity(params[:entity_id], params[:use_default_schema])
     else
-      response_serialized_object SemanticHelper.describeEntity(params[:entity_id], params[:use_default_schema])
+      lala = SemanticHelper.describeEntity(params[:entity_id], params[:use_default_schema])
+      puts lala.inspect
+      response_serialized_object lala
     end
   end
 

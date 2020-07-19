@@ -149,6 +149,8 @@ Fromthepage::Application.routes.draw do
     match '/semantic_entity/describe', as: :semantic_entity_describe, to: 'semantic_entity#show', via: [:get]
     match '/semantic_entity/list_marks', as: :semantic_entity_list_marks, to: 'mark#list_by_semantic_entity', via: [:post]
     match '/semantic_entity/list_references', as: :semantic_entity_list_references, to: 'search#list_semantic_references', via: [:post]
+    match '/semantic_entity/list_references_by_properties', as: :list_semantic_references_by_properties, to: 'search#list_semantic_references_by_properties', via: [:post]
+    match '/search/marks', as: :list_marks, to: 'search#list_marks', via: [:post]
     
     match '/schemaorg/:type', as: :get_schema_type, to: 'schema_org#get_schema_type', via: [:get]
     match '/schemaorg/config/tree', as: :get_schema_config, to: 'schema_org#get_schema_config', via: [:get]

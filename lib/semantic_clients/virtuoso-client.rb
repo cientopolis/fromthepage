@@ -28,28 +28,81 @@ class VirtuosoClient
   end
 
   def listSemanticContributions(filter = {})
-    # sanitize with ActiveRecord::Base::sanitize_sql(string)
-    sanitizedFilter = sanitizeFilter(filter)
-    entityType = (sanitizedFilter['entityType'] != nil) ? "FILTER (?entityType = #{ filter['entityType'] }) " : ''
-    propertyValue = (sanitizedFilter['propertyValue'] != nil) ? "FILTER regex(?propertyValue, '#{ getSchemaReference(filter['propertyValue']) }', 'i') " : ''
-    includeMatchedProperties = filter['includeMatchedProperties'] 
-    query = "
-        #{ getPrefixes() }
+    begin
+      matchedEntityTypes = getEntityTypes(filter)
+      sanitizedFilter = filter
+      # entityType = (sanitizedFilter['entityType'] != nil) ? "FILTER (?entityType = #{ formatId(filter['entityType']) }) ." : ''
+      entityType = (matchedEntityTypes != nil) ? "FILTER (?entityType IN (#{ matchedEntityTypes.join(',') }) && ?entityType != schema:NoteDigitalDocument) " : "FILTER (?entityType != schema:NoteDigitalDocument) "
+      includeMatchedProperties = filter['includeMatchedProperties']
+      matchAllConditions = filter['matchAllConditions'] == true
+      conditions = [
+        {'propertyValue': "regex(?propertyValue, '#conditionValue', 'i')"},
+        {'propertyName': "regex(?entityMatchingProperty, '#conditionValue', 'i')"},
+        {'entityTypeLike': "regex(?entityType, '#conditionValue', 'i')"}
+      ]
+      statement = "
+          #{ getPrefixes() }
 
-        SELECT DISTINCT ?idNote ?entityType ?idMainEntity #{ includeMatchedProperties ? '?entityMatchingProperty' : '' }
-        WHERE {
-          ?idNote rdf:type schema:NoteDigitalDocument .
-          ?idNote schema:mainEntity ?idMainEntity .
-          ?idMainEntity rdf:type ?entityType #{ entityType }.
-          ?idMainEntity ?entityMatchingProperty ?propertyValue #{ propertyValue }.
-        }
-    "
-    queryResult = do_query(query, 'json')
-    if queryResult
-      return queryResult.results
-    else
-      return { :bindings => [] }
+          SELECT DISTINCT ?idNote ?entityType ?idMainEntity #{ includeMatchedProperties ? "(group_concat(?entityMatchingProperty;separator=',') as ?entityMatchingProperties)": '' }
+          WHERE {
+            ?idNote rdf:type schema:NoteDigitalDocument .
+            ?idNote schema:mainEntity ?idMainEntity .
+            ?idMainEntity rdf:type ?entityType .
+            ?idMainEntity ?entityMatchingProperty ?propertyValue .
+            #{ entityType }
+            #{constructQueryFilters(filter, conditions)}
+            #{constructFilters(filter, conditions, matchAllConditions)}
+          }
+          group by ?idNote ?entityType ?idMainEntity
+      "
+      return execute_sparql(statement)
+    rescue => exception
+      puts exception.inspect
+      return []
     end
+  end
+
+  def constructFilters(receivedFilters, conditions, andConditions = false)
+    operator = andConditions ? '&&' : '||'
+    conditions = conditions.select { |condition| receivedFilters[condition.keys[0]] != nil }
+    preparedConditions = conditions.map { |condition| {condition.keys[0] => condition.values[0] = condition.values[0].gsub(/#conditionValue/, receivedFilters[condition.keys[0]])} }
+    filter = preparedConditions.reduce("") { |filter, condition| filter = addFilterCondition(filter, condition, operator) }
+    closeFilterStatement(filter)
+  end
+
+  def constructQueryFilters(receivedFilters, conditions)
+    partialFilters = []
+    for searchQueryCondition in receivedFilters['searchQueryConditions'] do
+      partialFilter = ""
+      for basicCondition in searchQueryCondition do
+        baseCondition = conditions.find{ |condition| condition.keys[0].to_s == basicCondition.keys[0].strip }
+        if(baseCondition)
+          conditionValue = baseCondition.values[0].gsub(/#conditionValue/, basicCondition[baseCondition.keys[0]])
+          preparedCondition = {baseCondition.values[0] => conditionValue}
+          partialFilter = addPartialFilterCondition(partialFilter, preparedCondition, '&&')
+        end
+      end
+      if(partialFilter != "")
+        partialFilters.push(closePartialFilterStatement(partialFilter))
+      end
+    end
+    partialFilters.length > 0 ? "FILTER(#{partialFilters.join(" || ")}) ." : ""
+  end
+
+  def addPartialFilterCondition(partialFilter, condition, operator)
+    partialFilter == '' ? condition.values[0] : "#{partialFilter} #{operator} #{condition.values[0]}" 
+  end
+
+  def closePartialFilterStatement(partialFilter)
+    partialFilter == "" ? "" : "(#{partialFilter})"
+  end
+
+  def addFilterCondition(filter, condition, operator)
+    filter == '' ? "FILTER(#{condition.values[0]}" : "#{filter} #{operator} #{condition.values[0]}" 
+  end
+
+  def closeFilterStatement(filter)
+    filter == "" ? "" : filter + ") ."
   end
 
   def listSemanticContributionsByEntity(filter = {})
@@ -269,10 +322,12 @@ class VirtuosoClient
     end
 
     def getPrefixes()
-      " PREFIX schema: <http://schema.org/>
+      prefixes = (Ontology.all.map { |ontology| "PREFIX #{ontology.prefix}: <#{ontology.url}>" }).join("\n")
+      " 
         PREFIX transcriptor: <#{ @graph }/>
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        #{prefixes}
       "
     end
 
@@ -298,7 +353,8 @@ class VirtuosoClient
       entity = getEntityItem(jsonld_hash, entityId)
       entity.each do |property, value|
         if(value.is_a?(Hash) && value["@id"])
-          entity[property] = graph.find{ |entityItem| entityItem['@id'] == value["@id"] }
+          entityProperty = graph.find{ |entityItem| entityItem['@id'] == value["@id"] }
+          entity[property] = (entityProperty && (entity['@id'] == entityProperty["@id"])) ? { "@id" => entity['@id'] } : entityProperty
         elsif value.is_a?(Array)
           processedArray = []
           value.each do | arrayMember |
@@ -321,9 +377,9 @@ class VirtuosoClient
       return nil
     end
 
-    def getSchemaReference(stringReference)
-      stringReference.gsub(/<|>/, '').gsub(/http:\/\/schema.org\//, 'schema:')
-    end
+    # def getSchemaReference(stringReference)
+    #   stringReference.gsub(/<|>/, '').gsub(/http:\/\/schema.org\//, 'schema:')
+    # end
 
     def getTranscriptorReference(stringReference)
       stringReference.gsub(/<|>/, '').gsub(@graph + "/", 'transcriptor:')
@@ -356,5 +412,25 @@ class VirtuosoClient
 
     def splitOntologyFromId(id)
       id.match(/https?:\/\/[\S]+/) ? id[/.*\//].chop : id.split(':').first
+    end
+
+    def execute_sparql(statement, graph = @graph)
+      begin
+        puts("About to run the next SPARQL statement =>\n", statement)
+        results = []
+        sparql = SPARQL::Client.new("#{@host}/sparql", { graph: graph })
+        query = sparql.query(statement)
+        query&.each_solution do |solution|
+          result = {}
+          solution.each do |name, solutionValue|
+            result[name] =  solutionValue.value
+          end
+          results.push(result)
+        end
+        return results
+      rescue => exception
+        puts exception.inspect
+        return []
+      end
     end
 end
