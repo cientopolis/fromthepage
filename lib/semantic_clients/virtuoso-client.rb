@@ -28,15 +28,17 @@ class VirtuosoClient
   end
 
   def listSemanticContributions(filter = {})
-    # sanitize with ActiveRecord::Base::sanitize_sql(string)
     begin
-      sanitizedFilter = sanitizeFilter(filter)
-      entityType = (sanitizedFilter['entityType'] != nil) ? "FILTER (?entityType = #{ formatId(filter['entityType']) }) ." : ''
+      matchedEntityTypes = getEntityTypes(filter)
+      sanitizedFilter = filter
+      # entityType = (sanitizedFilter['entityType'] != nil) ? "FILTER (?entityType = #{ formatId(filter['entityType']) }) ." : ''
+      entityType = (matchedEntityTypes != nil) ? "FILTER (?entityType IN (#{ matchedEntityTypes.join(',') }) && ?entityType != schema:NoteDigitalDocument) " : "FILTER (?entityType != schema:NoteDigitalDocument) "
       includeMatchedProperties = filter['includeMatchedProperties']
-      findInPropertyNameAndValue = filter['findInPropertyNameAndValue'] == true
+      matchAllConditions = filter['matchAllConditions'] == true
       conditions = [
-        {'propertyValue': "regex(?propertyValue, '#{ filter['propertyValue'] }', 'i')"},
-        {'propertyName': "regex(?entityMatchingProperty, '#{ filter['propertyName'] }', 'i')"}
+        {'propertyValue': "regex(?propertyValue, '#conditionValue', 'i')"},
+        {'propertyName': "regex(?entityMatchingProperty, '#conditionValue', 'i')"},
+        {'entityTypeLike': "regex(?entityType, '#conditionValue', 'i')"}
       ]
       statement = "
           #{ getPrefixes() }
@@ -48,7 +50,8 @@ class VirtuosoClient
             ?idMainEntity rdf:type ?entityType .
             ?idMainEntity ?entityMatchingProperty ?propertyValue .
             #{ entityType }
-            #{constructFilters(filter, conditions, findInPropertyNameAndValue)}
+            #{constructQueryFilters(filter, conditions)}
+            #{constructFilters(filter, conditions, matchAllConditions)}
           }
           group by ?idNote ?entityType ?idMainEntity
       "
@@ -62,8 +65,36 @@ class VirtuosoClient
   def constructFilters(receivedFilters, conditions, andConditions = false)
     operator = andConditions ? '&&' : '||'
     conditions = conditions.select { |condition| receivedFilters[condition.keys[0]] != nil }
-    filter = conditions.reduce("") { |filter, condition| filter = addFilterCondition(filter, condition, operator) }
+    preparedConditions = conditions.map { |condition| {condition.keys[0] => condition.values[0] = condition.values[0].gsub(/#conditionValue/, receivedFilters[condition.keys[0]])} }
+    filter = preparedConditions.reduce("") { |filter, condition| filter = addFilterCondition(filter, condition, operator) }
     closeFilterStatement(filter)
+  end
+
+  def constructQueryFilters(receivedFilters, conditions)
+    partialFilters = []
+    for searchQueryCondition in receivedFilters['searchQueryConditions'] do
+      partialFilter = ""
+      for basicCondition in searchQueryCondition do
+        baseCondition = conditions.find{ |condition| condition.keys[0].to_s == basicCondition.keys[0].strip }
+        if(baseCondition)
+          conditionValue = baseCondition.values[0].gsub(/#conditionValue/, basicCondition[baseCondition.keys[0]])
+          preparedCondition = {baseCondition.values[0] => conditionValue}
+          partialFilter = addPartialFilterCondition(partialFilter, preparedCondition, '&&')
+        end
+      end
+      if(partialFilter != "")
+        partialFilters.push(closePartialFilterStatement(partialFilter))
+      end
+    end
+    partialFilters.length > 0 ? "FILTER(#{partialFilters.join(" || ")}) ." : ""
+  end
+
+  def addPartialFilterCondition(partialFilter, condition, operator)
+    partialFilter == '' ? condition.values[0] : "#{partialFilter} #{operator} #{condition.values[0]}" 
+  end
+
+  def closePartialFilterStatement(partialFilter)
+    partialFilter == "" ? "" : "(#{partialFilter})"
   end
 
   def addFilterCondition(filter, condition, operator)
@@ -322,7 +353,8 @@ class VirtuosoClient
       entity = getEntityItem(jsonld_hash, entityId)
       entity.each do |property, value|
         if(value.is_a?(Hash) && value["@id"])
-          entity[property] = graph.find{ |entityItem| entityItem['@id'] == value["@id"] }
+          entityProperty = graph.find{ |entityItem| entityItem['@id'] == value["@id"] }
+          entity[property] = (entityProperty && (entity['@id'] == entityProperty["@id"])) ? { "@id" => entity['@id'] } : entityProperty
         elsif value.is_a?(Array)
           processedArray = []
           value.each do | arrayMember |
