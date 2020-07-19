@@ -47,7 +47,7 @@ class Api::SearchController < Api::ApiController
         semanticReferenceHash[:thumbnail] = semanticReference.base_image.split('.').join('_thumb.')
         semanticReferenceHash[:thumbnail] = file_to_url(semanticReferenceHash[:thumbnail])
         semanticReferenceHash[:base_image] = file_to_url(semanticReference.base_image)
-        semanticReferenceHash[:contributionSlugs] = semanticReferenceHash['contributionSlugs'].split(',')
+        semanticReferenceHash[:contributionSlugs] = semanticReferenceHash['contributionSlugs']&.split(',')
         semanticReferences.push(semanticReferenceHash)
       end
       return semanticReferences
