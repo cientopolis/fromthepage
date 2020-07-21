@@ -27,6 +27,24 @@ class VirtuosoClient
       do_query(query)
   end
 
+  def insert_relation(subject_id, predicate_id, object_id)
+    # "Authorization": "Basic " + Base64.strict_encode64(@user + ":" + @password),
+    if (subject_id && predicate_id && object_id)
+      headers = {
+          "Content-Type": "application/sparql-query"
+      }
+      httpClient = HttpClient.new(@host, headers, 'raw')
+      query = "
+      #{ getPrefixes() }
+      
+      INSERT IN GRAPH <#{ @graph }> { 
+        #{formatId(subject_id)} #{formatId(predicate_id)} #{formatId(object_id)} .
+      }"
+      return do_query(query)
+    end
+    return nil
+  end
+
   def listSemanticContributions(filter = {})
     begin
       matchedEntityTypes = getEntityTypes(filter)
@@ -264,6 +282,23 @@ class VirtuosoClient
       puts exception.inspect
       return []
     end
+  end
+
+  def search_loaded_components(searchText, semantic_component)
+      queryClasses = "
+      select distinct ?component
+      where {
+        ?entityId rdf:type ?component .
+        FILTER(?component != schema:NoteDigitalDocument)
+      }"
+      queryRelations = "
+      select distinct ?component
+      where {
+        ?entityId ?component ?target .
+        FILTER(?target != schema:NoteDigitalDocument)
+      }"
+      statement = semantic_component == "class" ? queryClasses : queryRelations 
+      execute_sparql(statement)
   end
 
   def upload_ontology(ontology)
