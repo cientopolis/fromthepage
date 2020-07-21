@@ -9,6 +9,11 @@ class SemanticHelper
   def self.insert(data)
     semanticClient.insert(data)
   end
+
+  #### Insert a new relation triplet ####
+  def self.insert_relation(subject_id, predicate_id, object_id)
+    semanticClient.insert_relation(subject_id, predicate_id, object_id)
+  end
   
   ## Lists semantic contributions matching filters: type and propertyValue(if someone match) ##
   def self.listSemanticContributions(data = {})
@@ -47,6 +52,10 @@ class SemanticHelper
 
   def self.upload_ontology(ontology)
     semanticClient.upload_ontology(ontology)
+  end
+
+  def self.search_loaded_components(searchText, semantic_component)
+    semanticClient.search_loaded_components(searchText, semantic_component)
   end
 
   def self.semanticClient

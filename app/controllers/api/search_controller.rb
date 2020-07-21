@@ -2,10 +2,10 @@ class Api::SearchController < Api::ApiController
 
   include ApplicationHelper
 
-  before_action :set_search_filter, only: [:list_semantic_references, :list_semantic_references_by_properties, :list_marks]
+  before_action :set_search_filter, only: [:list_semantic_references, :list_semantic_references_by_properties, :list_marks, :search_loaded_components]
 
   def public_actions
-    return [:list_semantic_references, :list_semantic_references_by_properties, :list_marks]
+    return [:list_semantic_references, :list_semantic_references_by_properties, :list_marks, :search_loaded_components]
   end
 
   def list_semantic_references
@@ -37,6 +37,10 @@ class Api::SearchController < Api::ApiController
         'group_concat(contributions.slug) AS `contributionSlugs`'
     ).joins(mark: { page: { work: :collection } }).where('contributions.slug in (?)', semanticContributionIDs).group('pages.id')
     response_serialized_object getSemanticReferencesData(info)
+  end
+
+  def search_loaded_components
+    response_serialized_object SemanticHelper.search_loaded_components(@filter['searchText'], @filter['semantic_component'])
   end
 
   private

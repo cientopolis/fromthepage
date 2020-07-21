@@ -150,6 +150,7 @@ Fromthepage::Application.routes.draw do
     match '/semantic_entity/list_marks', as: :semantic_entity_list_marks, to: 'mark#list_by_semantic_entity', via: [:post]
     match '/semantic_entity/list_references', as: :semantic_entity_list_references, to: 'search#list_semantic_references', via: [:post]
     match '/semantic_entity/list_references_by_properties', as: :list_semantic_references_by_properties, to: 'search#list_semantic_references_by_properties', via: [:post]
+    match '/semantic_entity/add_relation', as: :add_relation, to: 'semantic_entity#add_relation', via: [:post]
     match '/search/marks', as: :list_marks, to: 'search#list_marks', via: [:post]
     
     match '/schemaorg/:type', as: :get_schema_type, to: 'schema_org#get_schema_type', via: [:get]
@@ -157,6 +158,7 @@ Fromthepage::Application.routes.draw do
     match '/semantic_ontology/list_classes', as: :list_classes, to: 'semantic_ontology#list_classes', via: [:get,:post]
     match '/semantic_ontology/list_properties', as: :list_properties, to: 'semantic_ontology#list_properties', via: [:get,:post]
     match '/semantic_ontology/list_relations', as: :list_relations, to: 'semantic_ontology#list_relations', via: [:get,:post]
+    match '/semantic_ontology/search_loaded_components', as: :search_loaded_components, to: 'search#search_loaded_components', via: [:get,:post]
   end
 
   match '/:controller(/:action(/:id))', via: [:get, :post]
