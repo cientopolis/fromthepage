@@ -200,7 +200,6 @@ class VirtuosoClient
 
   def list_classes(ontology_id, parent = nil, include_parent = false)
     begin
-      # ontology = Ontology.find_by(ontology_id ? { :id => ontology_id } : getOntologyFindCondition(parent))
       ontology = getOntology(ontology_id, parent)
       results = []
       sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
@@ -232,7 +231,7 @@ class VirtuosoClient
 
   def list_properties(class_id, ontology_id = nil)
     begin
-      ontology = Ontology.find_by(getOntologyFindCondition(class_id, ontology_id))
+      ontology = getOntology(ontology_id, class_id)
       sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
       literal_properties_filter = ontology.literal_filter
       results = []
@@ -259,7 +258,7 @@ class VirtuosoClient
 
   def list_relations(class_id, ontology_id = nil)
     begin
-      ontology = Ontology.find_by(getOntologyFindCondition(class_id, ontology_id))
+      ontology = getOntology(ontology_id, class_id)
       sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
       relation_properties_filter = ontology.relation_filter
       results = []
@@ -289,13 +288,15 @@ class VirtuosoClient
       select distinct ?component
       where {
         ?entityId rdf:type ?component .
-        FILTER(?component != schema:NoteDigitalDocument)
+        FILTER(?component != schema:NoteDigitalDocument) .
+        FILTER regex(?component, '#{searchText}', 'i') .
       }"
       queryRelations = "
       select distinct ?component
       where {
         ?entityId ?component ?target .
-        FILTER(?target != schema:NoteDigitalDocument)
+        FILTER(?target != schema:NoteDigitalDocument) .
+        FILTER regex(?component, '#{searchText}', 'i') .
       }"
       statement = semantic_component == "class" ? queryClasses : queryRelations 
       execute_sparql(statement)

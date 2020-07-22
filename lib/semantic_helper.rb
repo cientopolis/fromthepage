@@ -75,11 +75,11 @@ class SemanticHelper
   end
 
   def self.createFilterFrom(query)
-    if(query.gsub(/(([^\,\+]+:[^\,\+]+)([\,\+]))*([^\,\+]+:[^\,\+]+)/, '').length == 0)
+    if(query.gsub(/(([^\,\+]+:\s*"[^\,\+]+)"([\,\+]))*([^\,\+]+:\s*"[^\,\+]+")/, '').length == 0)
       conditionSeparator=','
       incrementalSeparator='+'
       fieldValueSeparator=':'
-      return query.split(conditionSeparator).map { |condition| condition.split(incrementalSeparator).map { |keyValueString| {keyValueString.split(fieldValueSeparator)[0] => keyValueString.split(fieldValueSeparator)[1]} } }
+      return query.split(conditionSeparator).map { |condition| condition.split(incrementalSeparator).map { |keyValueString| {keyValueString.match(/(.+):\s*"(.+)"/).captures[0] => keyValueString.match(/(.+):\s*"(.+)"/).captures[1].gsub(/"/,'')} } }
     end
     return []
   end
