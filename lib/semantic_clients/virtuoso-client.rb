@@ -13,7 +13,7 @@ class VirtuosoClient
     @graph = ENV['VIRTUOSO_GRAPH']
     @user = ENV['VIRTUOSO_USER']
     @password = ENV['VIRTUOSO_PASSWORD']
-    @isql_path = ENV['VIRTUOSO_ISQL_PATH'] | "#{Dir.pwd}/bin/isql"
+    @isql_path = ENV['VIRTUOSO_ISQL_PATH'] || "#{Dir.pwd}/bin/isql"
   end
 
   def insert(jsonld_string)
@@ -209,8 +209,9 @@ class VirtuosoClient
       select ?label ?comment ?classId
       where {
         ?classId rdfs:label ?label.
-        ?classId rdfs:comment ?comment.
+        optional { ?classId rdfs:comment ?commentOptional }.
         ?classId rdf:type #{ontology.class_type}.
+        bind(coalesce(?commentOptional, '') As ?comment) .
         FILTER NOT EXISTS {
           ?classId rdf:type #{ontology.literal_type}
         }.
@@ -229,23 +230,43 @@ class VirtuosoClient
 
   end
 
+  def search_classes(searched_text, ontologyModel, ontology_id = nil)
+    ontology = ontologyModel ? ontologyModel : getOntology(ontology_id)
+    statement = "
+    select ?label ?comment ?classId
+    where {
+      ?classId rdfs:label ?label.
+      optional { ?classId rdfs:comment ?commentOptional }.
+      ?classId rdf:type #{ontology.class_type}.
+      bind(coalesce(?commentOptional, '') As ?comment) .
+      FILTER NOT EXISTS {
+        ?classId rdf:type #{ontology.literal_type}
+      }.
+      FILTER regex(?label, '#{searched_text}', 'i')
+    }"
+    execute_sparql(statement, ontology.url)
+  end
+
   def list_properties(class_id, ontology_id = nil)
     begin
       ontology = getOntology(ontology_id, class_id)
       sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
       literal_properties_filter = ontology.literal_filter
       results = []
-      query = sparql.query("
+      statement = "
       select ?property ?label ?comment (group_concat(?type;separator=',') as ?types)
       where {
           #{formatId(class_id)} rdfs:subClassOf* ?class .
           ?property #{ontology.domainkey} ?class .
           ?property rdfs:label ?label .
-          ?property rdfs:comment ?comment .
+          ?property rdfs:comment ?commentOptional .
           ?property #{ontology.rangekey} ?type .
           #{literal_properties_filter}
+          bind(coalesce(?commentOptional, '') As ?comment) .
       }
-      group by ?property ?label ?comment")
+      group by ?property ?label ?comment"
+      puts statement
+      query = sparql.query(statement)
       query&.each_solution do |solution|
         results.push({ property: solution[:property].value, types: solution[:types].value.split(','), label: solution[:label].value, comment: solution[:comment].value})
       end
@@ -312,6 +333,7 @@ class VirtuosoClient
     # create prefix
     puts "about to change prefix on virtuoso\n"
     isql_host = URI.parse(@host)
+    # command = "#{@isql_path} #{isql_host.host}:1111 #{@user} #{@password} exec=\"DB.DBA.XML_SET_NS_DECL (\"#{ontology.prefix}\", \"#{ontology.url}\", 2);\" "
     %x{ "#{@isql_path}" "#{isql_host.host}":1111 "#{@user}" "#{@password}" exec="DB.DBA.XML_SET_NS_DECL ('\"#{ontology.prefix}\"', '\"#{ontology.url}\"', 2);" }
   end
 
@@ -412,11 +434,7 @@ class VirtuosoClient
       end
       return nil
     end
-
-    # def getSchemaReference(stringReference)
-    #   stringReference.gsub(/<|>/, '').gsub(/http:\/\/schema.org\//, 'schema:')
-    # end
-
+    
     def getTranscriptorReference(stringReference)
       stringReference.gsub(/<|>/, '').gsub(@graph + "/", 'transcriptor:')
     end
@@ -425,17 +443,10 @@ class VirtuosoClient
       id.match(/https?:\/\/[\S]+/) ? "<#{id}>" : id
     end
 
-    def getOntologyFindCondition(id, ontology_id)
-      if ontology_id != nil
-        { :id => ontology_id }
-      elsif id.match(/https?:\/\/[\S]+/)
-         { :url => id[/.*\//].chop }
-      else
-        { :prefix => id.split(':').first }
+    def getOntology(ontology_id, entity_id = nil)
+      if (ontology_id == nil && entity_id == nil)
+        return nil
       end
-    end
-
-    def getOntology(ontology_id, entity_id)
       ontologies = Ontology.all
       if ontology_id != nil
         ontologies.find { |ontology| ontology.id == ontology_id }

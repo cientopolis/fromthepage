@@ -103,6 +103,7 @@ Fromthepage::Application.routes.draw do
     post 'ontology', :to=>'ontology#create'
     put 'ontology/:id', :to=>'ontology#update'
     delete 'ontology/:id', :to=>'ontology#destroy'
+    post 'ontology/:id/search_classes', :to=>'ontology#search_classes'
 
     get 'collection/list', :to=>'collection#collections_list'
     resources :collection, path: 'collection', only: [:create, :update, :destroy, :show] do

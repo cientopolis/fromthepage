@@ -50,6 +50,10 @@ class SemanticHelper
     semanticClient.list_relations(class_id, ontology_id)
   end
 
+  def self.search_classes(searched_text, ontologyModel, ontology_id = nil)
+    semanticClient.search_classes(searched_text, ontologyModel, ontology_id)
+  end
+
   def self.upload_ontology(ontology)
     semanticClient.upload_ontology(ontology)
   end

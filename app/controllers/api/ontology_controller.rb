@@ -1,6 +1,10 @@
 class Api::OntologyController < Api::ApiController
 
-    before_action :set_ontology, only: [:update, :destroy]
+    before_action :set_ontology, only: [:update, :destroy, :search_classes]
+
+    def public_actions
+        return [:search_classes]
+    end
 
     def create
         @ontology = Ontology.new(ontology_params)
@@ -29,6 +33,15 @@ class Api::OntologyController < Api::ApiController
     def list
         @ontologies = Ontology.all
         response_serialized_object @ontologies
+    end
+
+    def search_classes
+        params.permit(:search_text)
+        if(params.has_key?(:search_text) && params[:search_text] != '')
+            response_serialized_object SemanticHelper.search_classes(params[:search_text], @ontology)
+        else
+            response_serialized_object []
+        end
     end
 
     private
