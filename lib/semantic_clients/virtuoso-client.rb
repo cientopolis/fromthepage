@@ -142,22 +142,33 @@ class VirtuosoClient
   def listEntities(filter)
     matchedEntityTypes = getEntityTypes(filter)
     sanitizedFilter = sanitizeFilter(filter)
-    # defaultTypeFilter = "FILTER (?entityDefaultType IN (#{ getEntityTypes({"entityType" => 'schema:Thing', "hierarchical" => true}).join(',') })) "
     entityType = (matchedEntityTypes != nil) ? "FILTER (?entityType IN (#{ matchedEntityTypes.join(',') }) && ?entityType != schema:NoteDigitalDocument) " : "FILTER (?entityType != schema:NoteDigitalDocument) "
-    propertyValue = (sanitizedFilter['labelValue'] != nil) ? "FILTER regex(?entityLabel, #{ sanitizedFilter['labelValue'] }, 'i') " : ''
+    # propertyValue = (sanitizedFilter['labelValue'] != nil) ? "FILTER regex(?entityLabel, #{ sanitizedFilter['labelValue'] }, 'i') " : ''
     limit = (sanitizedFilter['limit']  != nil) ? "LIMIT #{ sanitizedFilter['limit'] }" : ''
-    query = "
+    matchAllConditions = filter['matchAllConditions'] == true
+
+    conditions = [
+      {'labelValue': "regex(?entityLabel, '#conditionValue', 'i')"},
+      {'propertyValue': "regex(?propertyValue, '#conditionValue', 'i')"},
+      {'propertyName': "regex(?entityMatchingProperty, '#conditionValue', 'i')"},
+      {'entityTypeLike': "regex(?entityType, '#conditionValue', 'i')"}
+    ]
+
+    statement = "
         #{ getPrefixes() }
 
         SELECT DISTINCT ?entityId, ?entityType, ?entityLabel
         WHERE {
             ?entityId rdf:type ?entityType #{ entityType }.
-            ?entityId rdfs:label ?entityLabel #{ propertyValue }.
+            ?entityId rdfs:label ?entityLabel.
+            #{constructQueryFilters(filter, conditions)}
+            #{constructFilters(filter, conditions, matchAllConditions)}
         }
         #{limit}
     "
     # ?entityId rdf:type ?entityDefaultType #{ defaultTypeFilter }.
-    do_query(query, 'json')&.results || { :bindings => [] }
+    # execute_sparql(statement)
+    do_query(statement, 'json')&.results || { :bindings => [] }
   end
 
   def describeEntity(entityId, useDefaultGraph = false)
@@ -228,6 +239,30 @@ class VirtuosoClient
       return []
     end
 
+  end
+
+    def list_parent_classes(ontology_id, child = nil, include_child = false)
+      if(!child)
+        return []
+      end
+      ontology = getOntology(ontology_id, child)
+      results = []
+      sparql = SPARQL::Client.new("#{@host}/sparql", { graph: ontology.url })
+      childInclusionFilter = include_child ? '*' : '+'
+      childFilter = "#{formatId(child)} rdfs:subClassOf#{childInclusionFilter}  ?classId."
+      statement = "
+      select ?label ?comment ?classId
+      where {
+        ?classId rdfs:label ?label.
+        optional { ?classId rdfs:comment ?commentOptional }.
+        ?classId rdf:type #{ontology.class_type}.
+        bind(coalesce(?commentOptional, '') As ?comment) .
+        FILTER NOT EXISTS {
+          ?classId rdf:type #{ontology.literal_type}
+        }.
+        #{childFilter}
+      }"
+      execute_sparql(statement, ontology.url)
   end
 
   def search_classes(searched_text, ontologyModel, ontology_id = nil)
@@ -449,7 +484,7 @@ class VirtuosoClient
       end
       ontologies = Ontology.all
       if ontology_id != nil
-        ontologies.find { |ontology| ontology.id == ontology_id }
+        ontologies.find { |ontology| ontology.id == Integer(ontology_id) }
       elsif entity_id.match(/https?:\/\/[\S]+/)
         ontologies.find { |ontology| entity_id.match(ontology.url) }
       else

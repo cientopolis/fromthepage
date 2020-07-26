@@ -27,7 +27,7 @@ class SemanticHelper
 
   ## Lists semantic contributions matching filters: type and propertyValue(if someone match) ##
   def self.listEntities(data = {})
-    semanticClient.listEntities(data)
+    semanticClient.listEntities(buildFilterIfRequested(data, ['labelValue','propertyValue','propertyName','entityTypeLike']))
   end
 
   def self.describeEntity(id, useDefaultGraph = false)
@@ -40,6 +40,10 @@ class SemanticHelper
 
   def self.list_classes(ontology_id, parent = nil)
     semanticClient.list_classes(ontology_id, parent)
+  end
+
+  def self.list_parent_classes(ontology_id, child = nil)
+    semanticClient.list_parent_classes(ontology_id, child)
   end
 
   def self.list_properties(class_id, ontology_id = nil)

@@ -9,7 +9,8 @@ class Api::SemanticOntologyController < Api::ApiController
   end
 
   def list_classes
-    response_serialized_object SemanticHelper.list_classes(params[:ontology_id], params[:parent])
+    response =  { :childs => SemanticHelper.list_classes(params[:ontology_id], params[:parent]), :parents => SemanticHelper.list_parent_classes(params[:ontology_id], params[:parent]) }
+    response_serialized_object response
   end
 
   def list_properties
