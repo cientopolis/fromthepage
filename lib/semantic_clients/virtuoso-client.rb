@@ -169,9 +169,8 @@ class VirtuosoClient
         }
         #{limit}
     "
-    # ?entityId rdf:type ?entityDefaultType #{ defaultTypeFilter }.
-    # execute_sparql(statement)
-    do_query(statement, 'json')&.results || { :bindings => [] }
+    execute_sparql(statement)
+    # do_query(statement, 'json')&.results || { :bindings => [] }
   end
 
   def describeEntity(entityId, useDefaultGraph = false)
