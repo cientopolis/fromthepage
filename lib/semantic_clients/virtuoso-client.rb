@@ -144,23 +144,26 @@ class VirtuosoClient
     sanitizedFilter = sanitizeFilter(filter)
     entityType = (matchedEntityTypes != nil) ? "FILTER (?entityType IN (#{ matchedEntityTypes.join(',') }) && ?entityType != schema:NoteDigitalDocument) " : "FILTER (?entityType != schema:NoteDigitalDocument) "
     # propertyValue = (sanitizedFilter['labelValue'] != nil) ? "FILTER regex(?entityLabel, #{ sanitizedFilter['labelValue'] }, 'i') " : ''
+    includeMatchedProperties = filter['includeMatchedProperties']
     limit = (sanitizedFilter['limit']  != nil) ? "LIMIT #{ sanitizedFilter['limit'] }" : ''
-    matchAllConditions = filter['matchAllConditions'] == true
+    matchAllConditions = filter['matchAllConditions']
 
     conditions = [
       {'labelValue': "regex(?entityLabel, '#conditionValue', 'i')"},
       {'propertyValue': "regex(?propertyValue, '#conditionValue', 'i')"},
-      {'propertyName': "regex(?entityMatchingProperty, '#conditionValue', 'i')"},
+      {'propertyName': "regex(?entityProperty, '#conditionValue', 'i')"},
       {'entityTypeLike': "regex(?entityType, '#conditionValue', 'i')"}
     ]
 
     statement = "
         #{ getPrefixes() }
 
-        SELECT DISTINCT ?entityId, ?entityType, ?entityLabel
+        SELECT DISTINCT ?entityId ?entityType ?entityLabel #{ includeMatchedProperties ? "(group_concat(?entityProperty;separator=',') as ?entityProperties)": '' }
         WHERE {
-            ?entityId rdf:type ?entityType #{ entityType }.
+            ?entityId rdf:type ?entityType .
             ?entityId rdfs:label ?entityLabel.
+            ?entityId ?entityProperty ?propertyValue .
+            #{ entityType }
             #{constructQueryFilters(filter, conditions)}
             #{constructFilters(filter, conditions, matchAllConditions)}
         }
@@ -241,7 +244,7 @@ class VirtuosoClient
 
   end
 
-    def list_parent_classes(ontology_id, child = nil, include_child = false)
+  def list_parent_classes(ontology_id, child = nil, include_child = false)
       if(!child)
         return []
       end
@@ -251,17 +254,20 @@ class VirtuosoClient
       childInclusionFilter = include_child ? '*' : '+'
       childFilter = "#{formatId(child)} rdfs:subClassOf#{childInclusionFilter}  ?classId."
       statement = "
-      select ?label ?comment ?classId
+      select ?label ?comment ?classId ?parentClassId
       where {
         ?classId rdfs:label ?label.
         optional { ?classId rdfs:comment ?commentOptional }.
         ?classId rdf:type #{ontology.class_type}.
         bind(coalesce(?commentOptional, '') As ?comment) .
+        optional { ?classId rdfs:subClassOf ?parentClassIdOptional }.
+        bind(coalesce(?parentClassIdOptional , '') As ?parentClassId) 
         FILTER NOT EXISTS {
           ?classId rdf:type #{ontology.literal_type}
         }.
         #{childFilter}
-      }"
+      }
+      group by ?label ?comment ?classId"
       execute_sparql(statement, ontology.url)
   end
 

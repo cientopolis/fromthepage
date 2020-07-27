@@ -43,7 +43,8 @@ class SemanticHelper
   end
 
   def self.list_parent_classes(ontology_id, child = nil)
-    semanticClient.list_parent_classes(ontology_id, child)
+    results = semanticClient.list_parent_classes(ontology_id, child)
+    return mapParentsRoutes(results)
   end
 
   def self.list_properties(class_id, ontology_id = nil)
@@ -107,4 +108,40 @@ class SemanticHelper
     end
     return filter
   end
+
+  def self.mapParentsRoutes(results)
+    graph = getResultsGraph(results)
+    routes = []
+    if(graph[:childs].length > 0)
+      loadGraphRoutes(graph, routes)
+    end
+    return routes
+  end
+  
+  def self.getResultsGraph(results)
+    graph = { :childs => results.select{|result| result[:parentClassId] == ""} }
+    loadGraphChilds(graph, results)
+    return graph
+  end
+
+  def self.loadGraphChilds(graph, results)
+    graph[:childs].each do |child|
+      child[:childs] = results.select{|result| result[:parentClassId] == child[:classId]}
+      loadGraphChilds(child, results)
+    end
+  end
+
+  def self.loadGraphRoutes(graph, routes, route = [])
+    if(graph[:classId])
+      route.push(graph.except(:childs))
+    end
+    if(graph[:childs].length == 0)
+      routes.push(route)
+    else
+      graph[:childs].each do |child|
+        loadGraphRoutes(child, routes, Marshal.load(Marshal.dump(route)))
+      end
+    end
+  end
+
 end
