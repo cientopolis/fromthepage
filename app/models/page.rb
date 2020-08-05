@@ -36,6 +36,7 @@ class Page < ActiveRecord::Base
   after_destroy :update_work_stats
   after_destroy :delete_deeds
   after_destroy :update_featured_page, if: Proc.new {|page| page.work.featured_page == page.id}
+  after_create :insert_semantic_register
 
   attr_accessible :title
   attr_accessible :source_text
@@ -310,6 +311,23 @@ UPDATE `articles` SET graph_image=NULL WHERE `articles`.`id` IN (SELECT article_
     methods = [:thumbnail_url,:base_image_url]
     options[:methods] = options[:methods] ? options[:methods] | methods : methods
     super
+  end
+
+  def insert_semantic_register
+    SemanticHelper.insert(self.to_jsonld)
+  end
+
+  def to_jsonld
+    jsonld_hash = {
+      :@context => SemanticHelper.get_prefixes,
+      :@id => "transcriptor:page-#{self.id}",
+      :@type => "transcriptor:Page",
+      :"rdfs:label" => self.title,
+      :"transcriptor:transcriptionContent" => self.search_text ? self.search_text : "",
+      :"transcriptor:belongsToWork" => {
+        :@id => "transcriptor:#{self.work.slug}"
+      }
+    }.to_json
   end
 
 private

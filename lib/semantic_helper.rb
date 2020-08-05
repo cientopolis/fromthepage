@@ -59,12 +59,20 @@ class SemanticHelper
     semanticClient.search_classes(searched_text, ontologyModel, ontology_id)
   end
 
+  def self.get_transcriptor_ontology()
+    semanticClient.get_transcriptor_ontology()
+  end
+
   def self.upload_ontology(ontology)
     semanticClient.upload_ontology(ontology)
   end
 
   def self.search_loaded_components(searchText, semantic_component)
     semanticClient.search_loaded_components(searchText, semantic_component)
+  end
+
+  def self.get_prefixes
+    semanticClient.get_prefixes
   end
 
   def self.semanticClient

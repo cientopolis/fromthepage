@@ -35,7 +35,7 @@ class VirtuosoClient
       }
       httpClient = HttpClient.new(@host, headers, 'raw')
       query = "
-      #{ getPrefixes() }
+      #{ getRdfPrefixes() }
       
       INSERT IN GRAPH <#{ @graph }> { 
         #{formatId(subject_id)} #{formatId(predicate_id)} #{formatId(object_id)} .
@@ -50,7 +50,7 @@ class VirtuosoClient
       matchedEntityTypes = getEntityTypes(filter)
       sanitizedFilter = filter
       # entityType = (sanitizedFilter['entityType'] != nil) ? "FILTER (?entityType = #{ formatId(filter['entityType']) }) ." : ''
-      entityType = (matchedEntityTypes != nil) ? "FILTER (?entityType IN (#{ matchedEntityTypes.join(',') }) && ?entityType != schema:NoteDigitalDocument) " : "FILTER (?entityType != schema:NoteDigitalDocument) "
+      entityType = (matchedEntityTypes != nil) ? "FILTER (?entityType IN (#{ matchedEntityTypes.join(',') }) && ?entityType != transcriptor:Mark) " : "FILTER (?entityType != transcriptor:Mark) "
       includeMatchedProperties = filter['includeMatchedProperties']
       matchAllConditions = filter['matchAllConditions'] == true
       conditions = [
@@ -59,12 +59,12 @@ class VirtuosoClient
         {'entityTypeLike': "regex(?entityType, '#conditionValue', 'i')"}
       ]
       statement = "
-          #{ getPrefixes() }
+          #{ getRdfPrefixes() }
 
           SELECT DISTINCT ?idNote ?entityType ?idMainEntity #{ includeMatchedProperties ? "(group_concat(?entityMatchingProperty;separator=',') as ?entityMatchingProperties)": '' }
           WHERE {
-            ?idNote rdf:type schema:NoteDigitalDocument .
-            ?idNote schema:mainEntity ?idMainEntity .
+            ?idNote rdf:type transcriptor:Mark .
+            ?idNote transcriptor:mainEntity ?idMainEntity .
             ?idMainEntity rdf:type ?entityType .
             ?idMainEntity ?entityMatchingProperty ?propertyValue .
             #{ entityType }
@@ -128,12 +128,12 @@ class VirtuosoClient
     sanitizedFilter = sanitizeFilter(filter)
     propertyValue = (sanitizedFilter['entityId'] != nil) ? "FILTER regex(?propertyValue, '#{ filter['entityId'] }', 'i') " : ''
     query = "
-        #{ getPrefixes() }
+        #{ getRdfPrefixes() }
 
         SELECT DISTINCT ?idNote 
         WHERE {
-            ?idNote rdf:type schema:NoteDigitalDocument .
-            ?idNote schema:mainEntity #{ getTranscriptorReference(filter['entityId']) } .
+            ?idNote rdf:type transcriptor:Mark .
+            ?idNote transcriptor:mainEntity #{ getTranscriptorReference(filter['entityId']) } .
         }
     "
     do_query(query, 'json')&.results || { :bindings => [] }
@@ -142,7 +142,7 @@ class VirtuosoClient
   def listEntities(filter)
     matchedEntityTypes = getEntityTypes(filter)
     sanitizedFilter = sanitizeFilter(filter)
-    entityType = (matchedEntityTypes != nil) ? "FILTER (?entityType IN (#{ matchedEntityTypes.join(',') }) && ?entityType != schema:NoteDigitalDocument) " : "FILTER (?entityType != schema:NoteDigitalDocument) "
+    entityType = (matchedEntityTypes != nil) ? "FILTER (?entityType IN (#{ matchedEntityTypes.join(',') }) && ?entityType != transcriptor:Mark) " : "FILTER (?entityType != transcriptor:Mark) "
     # propertyValue = (sanitizedFilter['labelValue'] != nil) ? "FILTER regex(?entityLabel, #{ sanitizedFilter['labelValue'] }, 'i') " : ''
     includeMatchedProperties = filter['includeMatchedProperties']
     limit = (sanitizedFilter['limit']  != nil) ? "LIMIT #{ sanitizedFilter['limit'] }" : ''
@@ -156,7 +156,7 @@ class VirtuosoClient
     ]
 
     statement = "
-        #{ getPrefixes() }
+        #{ getRdfPrefixes() }
 
         SELECT DISTINCT ?entityId ?entityType ?entityLabel #{ includeMatchedProperties ? "(group_concat(?entityProperty;separator=',') as ?entityProperties)": '' }
         WHERE {
@@ -174,10 +174,11 @@ class VirtuosoClient
   end
 
   def describeEntity(entityId, useDefaultGraph = false)
-    entityIdQuery = useDefaultGraph ? "#{@graph}/#{entityId}" : entityId
-    # sanitize with ActiveRecord::Base::sanitize_sql(string)
+    # entityIdQuery = useDefaultGraph ? "#{@graph}#{entityId}" : entityId
+    entityIdQuery = is_prefixed(entityId) ? entityId : "#{@graph}#{entityId}"
+
     query = "
-      #{ getPrefixes() }
+      #{ getRdfPrefixes() }
 
       DESCRIBE <#{ entityIdQuery }> ?p ?q
       WHERE {
@@ -189,20 +190,21 @@ class VirtuosoClient
   end
 
   def describeSemanticContributionEntity(idSemanticContribution, useDefaultGraph = false)
-    idSemanticContributionQuery = useDefaultGraph ? "#{@graph}/#{idSemanticContribution}" : idSemanticContribution
-    # sanitize with ActiveRecord::Base::sanitize_sql(string)
+    # idSemanticContributionQuery = useDefaultGraph ? "#{@graph}#{idSemanticContribution}" : idSemanticContribution
+    idSemanticContributionQuery = is_prefixed(idSemanticContribution) ? idSemanticContribution : "#{@graph}#{idSemanticContribution}"
+
     query = "
-        #{ getPrefixes() }
+        #{ getRdfPrefixes() }
 
         DESCRIBE ?mainEntityId ?p ?q
         WHERE {
-          <#{idSemanticContributionQuery}> <http://schema.org/mainEntity> ?mainEntityId .
+          <#{idSemanticContributionQuery}> transcriptor:mainEntity ?mainEntityId .
           ?mainEntityId ?p ?q .
         }
     "
     response = do_query(query)
     semanticContribution = (entity = response["data"].body) ? compressEntityRelations(rdfToJsonld(entity, idSemanticContribution), idSemanticContribution) : nil
-    entityId = semanticContribution ? semanticContribution['schema:mainEntity']['@id'] : nil
+    entityId = semanticContribution ? semanticContribution['transcriptor:mainEntity']['@id'] : nil
     if entityId
       entityId = entityId.split(':').last
       return (entity = response["data"].body) ? compressEntityRelations(rdfToJsonld(entity, entityId), entityId) : nil
@@ -349,18 +351,26 @@ class VirtuosoClient
       select distinct ?component
       where {
         ?entityId rdf:type ?component .
-        FILTER(?component != schema:NoteDigitalDocument) .
+        FILTER(?component != transcriptor:Mark) .
         FILTER regex(?component, '#{searchText}', 'i') .
       }"
       queryRelations = "
       select distinct ?component
       where {
         ?entityId ?component ?target .
-        FILTER(?target != schema:NoteDigitalDocument) .
+        FILTER(?target != transcriptor:Mark) .
         FILTER regex(?component, '#{searchText}', 'i') .
       }"
       statement = semantic_component == "class" ? queryClasses : queryRelations 
       execute_sparql(statement)
+  end
+
+  def get_transcriptor_ontology
+    query = "
+      select ?predicate ?value
+      where { <#{@graph}> ?predicate ?value }
+    "
+    execute_sparql(query)
   end
 
   def upload_ontology(ontology)
@@ -375,6 +385,19 @@ class VirtuosoClient
     isql_host = URI.parse(@host)
     # command = "#{@isql_path} #{isql_host.host}:1111 #{@user} #{@password} exec=\"DB.DBA.XML_SET_NS_DECL (\"#{ontology.prefix}\", \"#{ontology.url}\", 2);\" "
     %x{ "#{@isql_path}" "#{isql_host.host}":1111 "#{@user}" "#{@password}" exec="DB.DBA.XML_SET_NS_DECL ('\"#{ontology.prefix}\"', '\"#{ontology.url}\"', 2);" }
+  end
+
+  def get_prefixes
+    prefixes = {
+      :rdf => "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+      :rdfs => "http://www.w3.org/2000/01/rdf-schema#",
+      :transcriptor => @graph,
+    }
+    Ontology.all
+    for ontology in Ontology.all do
+      prefixes[ontology.prefix.to_sym] = ontology.url
+    end
+    return prefixes
   end
 
   private
@@ -392,17 +415,18 @@ class VirtuosoClient
 
     def rdfToJsonld(rdf_string, element_id, is_container = false)
       graph = RDF::Graph.new << RDF::Turtle::Reader.new(rdf_string)
-      context = JSON.parse %({
-        "@context": {
-          "schema":   "http://schema.org/",
-          "rdf":  "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-          "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-          "transcriptor": "#{ @graph }/"
-        }
-      })
+      # context = JSON.parse %({
+      #   "@context": {
+      #     "schema":   "http://schema.org/",
+      #     "rdf":  "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+      #     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      #     "transcriptor": "#{ @graph }"
+      #   }
+      # })
+      context = JSON.parse(SemanticHelper.get_prefixes.to_json)
       compacted = nil
       JSON::LD::API::fromRdf(graph) do |expanded|
-        compacted = JSON::LD::API.compact(expanded, context['@context'])
+        compacted = JSON::LD::API.compact(expanded, context)
       end
       flatCompacted(compacted, element_id, is_container)
     end
@@ -413,16 +437,16 @@ class VirtuosoClient
         if (graphElement["@id"] == element_id)
           mainElement = graphElement
           mainElement['@context'] = compacted['@context']
-          return is_container ? flatCompacted(compacted, mainElement['schema:mainEntity']['@id'], false) : mainElement
+          return is_container ? flatCompacted(compacted, mainElement['transcriptor:mainEntity']['@id'], false) : mainElement
         end
       end
       return compacted
     end
 
-    def getPrefixes()
+    def getRdfPrefixes
       prefixes = (Ontology.all.map { |ontology| "PREFIX #{ontology.prefix}: <#{ontology.url}>" }).join("\n")
       " 
-        PREFIX transcriptor: <#{ @graph }/>
+        PREFIX transcriptor: <#{ @graph }>
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         #{prefixes}
@@ -476,7 +500,7 @@ class VirtuosoClient
     end
     
     def getTranscriptorReference(stringReference)
-      stringReference.gsub(/<|>/, '').gsub(@graph + "/", 'transcriptor:')
+      stringReference.gsub(/<|>/, '').gsub(@graph, 'transcriptor:')
     end
 
     def formatId(id)
@@ -497,8 +521,24 @@ class VirtuosoClient
       end
     end
 
-    def splitOntologyFromId(id)
-      id.match(/https?:\/\/[\S]+/) ? id[/.*\//].chop : id.split(':').first
+    def is_prefixed(entity_id)
+      if (entity_id == nil)
+        return false
+      end
+      ontologies = findOntologies(true)
+      if entity_id.match(/https?:\/\/[\S]+/)
+        ontologies.any? { |ontology| entity_id.match?(ontology.url) }
+      else
+        ontologies.any? { |ontology| ontology.prefix == entity_id.split(':').first }
+      end
+    end
+
+    def findOntologies(includeDefaultGraph = false)
+      ontologies = Ontology.all
+      if (includeDefaultGraph)
+        ontologies.push(OpenStruct.new( :prefix => "transcriptor", :url => @graph ))
+      end
+      return ontologies
     end
 
     def execute_sparql(statement, graph = @graph)
