@@ -18,6 +18,7 @@ class Work < ActiveRecord::Base
 
   after_save :update_statistic
   after_destroy :cleanup_images
+  after_create :insert_semantic_register
 
   attr_accessible :title,
                   :author,
@@ -190,5 +191,22 @@ class Work < ActiveRecord::Base
     methods = [:thumbnail]
     options[:methods] = options[:methods] ? options[:methods] | methods : methods
     super
+  end
+
+  def insert_semantic_register
+    SemanticHelper.insert(self.to_jsonld)
+  end
+
+  def to_jsonld
+    jsonld_hash = {
+      :@context => SemanticHelper.get_prefixes,
+      :@id => "transcriptor:#{self.slug}",
+      :@type => "transcriptor:Work",
+      :"rdfs:label" => self.title,
+      :"rdfs:comment" => self.description ? self.description : "",
+      :"transcriptor:belongsToCollection" => {
+        :@id => "transcriptor:#{self.collection.slug}"
+      }
+    }.to_json
   end
 end

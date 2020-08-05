@@ -1,0 +1,118 @@
+{
+  "@context": {
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "transcriptor": "http://transcriptor.com/",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "dc": "http://purl.org/dc/elements/1.1/"
+  },
+  "@graph": [
+    {
+      "@id": "transcriptor:",
+      "@type": "owl:Ontology",
+      "dc:title": "transcriptor",
+      "dc:description": "A mini ontology created to represent transcriptor models."
+    },
+    {
+      "@id": "transcriptor:Collection",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A set of works grouped by certain criteria.",
+      "rdfs:label": "Collection"
+    },
+    {
+      "@id": "transcriptor:Work",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A set of projects grouped by certain criteria.",
+      "rdfs:label": "Work"
+    },
+    {
+      "@id": "transcriptor:Page",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A page of a book or a manuscript that belongs to a transcription work.",
+      "rdfs:label": "Page"
+    },
+    {
+      "@id": "transcriptor:Layer",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A layer of a page that contains transcription marks.",
+      "rdfs:label": "Layer"
+    },
+    {
+      "@id": "transcriptor:Mark",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A mark drawn on a page, contains transcription information.",
+      "rdfs:label": "Mark"
+    },
+    {
+      "@id": "transcriptor:belongsToCollection",
+      "@type": "rdfs:Property",
+      "rdfs:comment": "Indicates the collection to which the work belongs.",
+      "rdfs:label": "belongsToCollection",
+      "rdfs:domain": {
+        "@id": "transcriptor:Work"
+      },
+      "rdfs:range": {
+        "@id": "transcriptor:Collection"
+      }
+    },
+    {
+      "@id": "transcriptor:belongsToWork",
+      "@type": "rdfs:Property",
+      "rdfs:comment": "Indicates the work to which the page belongs.",
+      "rdfs:label": "belongsToWork",
+      "rdfs:domain": {
+        "@id": "transcriptor:Page"
+      },
+      "rdfs:range": {
+        "@id": "transcriptor:Work"
+      }
+    },
+    {
+      "@id": "transcriptor:transcriptionContent",
+      "@type": "rdfs:Property",
+      "rdfs:comment": "Contains the textual content of a transcribed page.",
+      "rdfs:label": "transcriptionContent",
+      "rdfs:domain": {
+        "@id": "transcriptor:Page"
+      },
+      "rdfs:range": {
+        "@id": "rdfs:Literal"
+      }
+    },
+    {
+      "@id": "transcriptor:belongsToPage",
+      "@type": "rdfs:Property",
+      "rdfs:comment": "Indicates the page to which the layer belongs.",
+      "rdfs:label": "belongsToPage",
+      "rdfs:domain": {
+        "@id": "transcriptor:Layer"
+      },
+      "rdfs:range": {
+        "@id": "transcriptor:Page"
+      }
+    },
+    {
+      "@id": "transcriptor:belongsToLayer",
+      "@type": "rdfs:Property",
+      "rdfs:comment": "Indicates the layer which the mark belongs.",
+      "rdfs:label": "belongsToLayer",
+      "rdfs:domain": {
+        "@id": "transcriptor:Mark"
+      },
+      "rdfs:range": {
+        "@id": "transcriptor:Layer"
+      }
+    },
+    {
+      "@id": "transcriptor:mainEntity",
+      "@type": "rdfs:Property",
+      "rdfs:comment": "Reference to the mark semantic entity.",
+      "rdfs:label": "mainEntity",
+      "rdfs:domain": {
+        "@id": "transcriptor:Mark"
+      },
+      "rdfs:range": {
+        "@id": "rdfs:Resource"
+      }
+    }
+  ]
+}
