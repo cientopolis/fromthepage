@@ -1,11 +1,11 @@
 # handles administrative tasks for the collection object
 class Api::CollectionController < Api::ApiController
   
-  before_action :set_collection, :only => [:show, :edit, :update, :destroy, :contributors, :new_work]
+  before_action :set_collection, :only => [:show, :edit, :update, :destroy, :contributors, :new_work, :export_as_rdf]
   before_filter :load_settings, :only => [:edit, :update, :upload]
   
   def public_actions
-    return [:show,:show_works]
+    return [:show,:show_works,:export_as_rdf]
   end
   
   ### Endpoints Methods ###
@@ -100,7 +100,12 @@ class Api::CollectionController < Api::ApiController
   def collections_list
     @collections = Collection.all
     response_serialized_object @collections
-   end
+  end
+
+  def export_as_rdf
+    file_content = @collection.export_as_rdf['data'].body
+    send_data file_content, :filename => "#{@collection.slug}.rdf"
+  end
   
   private
     def set_collection

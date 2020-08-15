@@ -19,6 +19,7 @@ class Work < ActiveRecord::Base
   after_save :update_statistic
   after_destroy :cleanup_images
   after_create :insert_semantic_register
+  after_update :update_semantic_register
 
   attr_accessible :title,
                   :author,
@@ -187,6 +188,10 @@ class Work < ActiveRecord::Base
       self.update_columns(featured_page: page.id)
   end
 
+  def export_as_rdf
+    SemanticHelper.export_as_rdf("transcriptor:#{self.collection.slug}", "transcriptor:#{self.slug}")
+  end
+
   def as_json(options={})
     methods = [:thumbnail]
     options[:methods] = options[:methods] ? options[:methods] | methods : methods
@@ -195,6 +200,10 @@ class Work < ActiveRecord::Base
 
   def insert_semantic_register
     SemanticHelper.insert(self.to_jsonld)
+  end
+
+  def update_semantic_register
+    SemanticHelper.update(self.to_jsonld_was, self.to_jsonld)
   end
 
   def to_jsonld
@@ -209,4 +218,18 @@ class Work < ActiveRecord::Base
       }
     }.to_json
   end
+
+  def to_jsonld_was
+    jsonld_hash = {
+      :@context => SemanticHelper.get_prefixes,
+      :@id => "transcriptor:#{self.slug_was}",
+      :@type => "transcriptor:Work",
+      :"rdfs:label" => self.title_was,
+      :"rdfs:comment" => self.description_was ? self.description_was : "",
+      :"transcriptor:belongsToCollection" => {
+        :@id => "transcriptor:#{self.collection.slug}"
+      }
+    }.to_json
+  end
+
 end

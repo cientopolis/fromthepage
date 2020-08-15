@@ -26,6 +26,7 @@ class Collection < ActiveRecord::Base
   before_create :set_link_help
   after_save :create_categories
   after_create :insert_semantic_register
+  after_update :update_semantic_register
 
   mount_uploader :picture, PictureUploader
 
@@ -123,6 +124,14 @@ class Collection < ActiveRecord::Base
     SemanticHelper.insert(self.to_jsonld)
   end
 
+  def update_semantic_register
+    SemanticHelper.update(self.to_jsonld_was, self.to_jsonld)
+  end
+
+  def export_as_rdf
+    SemanticHelper.export_as_rdf("transcriptor:#{self.slug}")
+  end
+
   protected
     def set_transcription_conventions
       unless self.transcription_conventions.present?
@@ -149,6 +158,16 @@ class Collection < ActiveRecord::Base
         :@type => "transcriptor:Collection",
         :"rdfs:label" => self.title,
         :"rdfs:comment" => self.intro_block ? self.intro_block : "" 
+      }.to_json
+    end
+
+    def to_jsonld_was
+      jsonld_hash = {
+        :@context => SemanticHelper.get_prefixes,
+        :@id => "transcriptor:#{self.slug_was}",
+        :@type => "transcriptor:Collection",
+        :"rdfs:label" => self.title_was,
+        :"rdfs:comment" => self.intro_block_was ? self.intro_block_was : "" 
       }.to_json
     end
 
