@@ -45,6 +45,54 @@ class VirtuosoClient
     return nil
   end
 
+  def update(jsonld_string_old, jsonld_string_new)
+    # "Authorization": "Basic " + Base64.strict_encode64(@user + ":" + @password),
+      headers = {
+          "Content-Type": "application/sparql-query"
+      }
+      httpClient = HttpClient.new(@host, headers, 'raw')
+      rdf_string_old = jsonldToRdf(jsonld_string_old)
+      rdf_string_new = jsonldToRdf(jsonld_string_new)
+      if rdf_string_old != rdf_string_new
+        query = "
+          WITH <#{ @graph }>
+          DELETE { #{rdf_string_old} }
+          INSERT { #{rdf_string_new} }
+        "
+        do_query(query)
+
+        old_id = JSON.parse(jsonld_string_old)['@id']
+        new_id = JSON.parse(jsonld_string_new)['@id']
+        if old_id != new_id
+          updateSlugQuery = "
+            WITH <#{@graph}>
+            INSERT {
+              ?entityId ?propertyId ?newId
+            }
+            where {{
+              select ?entityId ?propertyId ?newId
+              where {
+                ?entityId ?propertyId ?oldId .
+                bind(#{formatId(new_id)} As ?newId) .
+                FILTER(?oldId = #{formatId(old_id)})
+              }
+            }}
+            DELETE {
+              ?entityId ?propertyId ?oldId
+            }
+            where{{
+              select ?entityId ?propertyId ?oldId
+              where {
+                ?entityId ?propertyId ?oldId .
+                FILTER(?oldId = #{formatId(old_id)})
+              }
+            }}
+          " 
+          do_query(updateSlugQuery)
+        end
+      end
+  end
+
   def listSemanticContributions(filter = {})
     begin
       matchedEntityTypes = getEntityTypes(filter)
@@ -363,6 +411,77 @@ class VirtuosoClient
       }"
       statement = semantic_component == "class" ? queryClasses : queryRelations 
       execute_sparql(statement)
+  end
+
+  def export_as_rdf(collection_id, work_id = nil)
+    collectionFilter = formatId(collection_id)
+    workFilter = work_id ? formatId(work_id) : '?work'
+    query = "
+      construct {
+          ?s ?p ?o
+      } where {{
+          select ?s ?p ?o {
+              {
+                  select ?s ?p ?o (?s AS ?collection)
+                  where {
+                      ?s ?p ?o .
+                      filter(?s = #{collectionFilter})
+                  }
+              } union {
+                  select ?s ?p ?o (?s AS ?work)
+                  where {
+                      ?s transcriptor:belongsToCollection ?collection .
+                      ?s ?p ?o .
+                      filter(?collection = #{collectionFilter})
+                      filter(?s = #{work_id ? workFilter : '?s'})
+                  }
+              } union {
+                  select ?s ?p ?o (?s AS ?page)
+                  where {
+                      ?s transcriptor:belongsToWork #{workFilter} .
+                      ?s ?p ?o .
+                      filter exists {
+                          #{workFilter} transcriptor:belongsToCollection #{collectionFilter} .
+                      }
+                  }
+              } union {
+                  select ?s ?p ?o (?s AS ?layer)
+                  where {
+                      ?s transcriptor:belongsToPage ?page .
+                      ?s ?p ?o .
+                      filter exists {
+                      #{workFilter} transcriptor:belongsToCollection #{collectionFilter} .
+                      ?page transcriptor:belongsToWork #{workFilter} .
+                      }
+                  }
+              } union {
+                  select ?s ?p ?o (?s AS ?mark)
+                  where {
+                      ?s transcriptor:belongsToLayer ?layer .
+                      ?s ?p ?o .
+                      filter exists {
+                      #{workFilter} transcriptor:belongsToCollection #{collectionFilter} .
+                      ?page transcriptor:belongsToWork #{workFilter} .
+                      ?layer transcriptor:belongsToPage ?page .
+                      }
+                  }
+              } union {
+                  select ?s ?p ?o (?s AS ?entity)
+                  where {
+                      ?mark transcriptor:mainEntity ?s .
+                      ?s ?p ?o .
+                      filter exists {
+                      #{workFilter} transcriptor:belongsToCollection #{collectionFilter} .
+                      ?page transcriptor:belongsToWork #{workFilter} .
+                      ?layer transcriptor:belongsToPage ?page .
+                      ?mark transcriptor:belongsToLayer ?layer .
+                      }
+                  }
+              }
+          }
+      }}
+    "
+    do_query(query, 'application/rdf+xml')
   end
 
   def get_transcriptor_ontology

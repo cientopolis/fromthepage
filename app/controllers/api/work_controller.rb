@@ -13,13 +13,13 @@ class Api::WorkController < Api::ApiController
   #                                  :set_work_transcription_conventions]
   # tested
   #before_filter :authorized?, :only => [:edit, :pages_tab, :delete, :new, :create]
-  before_action :set_work, :only => [:show, :edit, :update, :destroy]
+  before_action :set_work, :only => [:show, :edit, :update, :destroy, :export_as_rdf]
 
   # no layout if xhr request
   # layout Proc.new { |controller| controller.request.xhr? ? false : nil }, :only => [:new, :create]
 
   def public_actions
-    return [:show,:show_pages]
+    return [:show,:show_pages,:export_as_rdf]
   end
 
   def destroy
@@ -148,6 +148,11 @@ class Api::WorkController < Api::ApiController
   #   redirect_to :back
   # end
 
+  def export_as_rdf
+    file_content = @work.export_as_rdf['data'].body
+    send_data file_content, :filename => "#{@work.slug}.rdf"
+  end
+  
   protected
   def record_deed(work)
     deed = Deed.new

@@ -108,9 +108,11 @@ Fromthepage::Application.routes.draw do
     get 'collection/list', :to=>'collection#collections_list'
     resources :collection, path: 'collection', only: [:create, :update, :destroy, :show] do
       get ':collection_id', path: 'works', as: :works, to: 'collection#show_works'
+      get ':collection_id', path: 'export_as_rdf', as: :export_collection_as_rdf, to: 'collection#export_as_rdf'
     end
     resources :work, path: 'work', only: [:create, :update, :destroy, :show] do
       get ':work_id', path: 'pages', as: :pages, to: 'work#show_pages'
+      get ':work_id', path: 'export_as_rdf', as: :export_work_as_rdf, to: 'work#export_as_rdf'
     end
     resources :page, path: 'page', only: [:create, :update, :destroy, :show] do
       get '', path: 'marks', as: :show_marks, to: 'mark#list_by_page'

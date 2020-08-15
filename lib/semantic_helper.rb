@@ -14,6 +14,11 @@ class SemanticHelper
   def self.insert_relation(subject_id, predicate_id, object_id)
     semanticClient.insert_relation(subject_id, predicate_id, object_id)
   end
+
+  #### Update a new group of triplets ####
+  def self.update(data_old, data_new)
+    semanticClient.update(data_old, data_new)
+  end
   
   ## Lists semantic contributions matching filters: type and propertyValue(if someone match) ##
   def self.listSemanticContributions(data = {})
@@ -69,6 +74,10 @@ class SemanticHelper
 
   def self.search_loaded_components(searchText, semantic_component)
     semanticClient.search_loaded_components(searchText, semantic_component)
+  end
+
+  def self.export_as_rdf(collection_id, work_id = nil)
+    semanticClient.export_as_rdf(collection_id, work_id)
   end
 
   def self.get_prefixes
