@@ -2,7 +2,7 @@ class Api::DashboardController < Api::ApiController
 
   include AddWorkHelper
 
-  before_filter :authorized?, :only => [:owner, :staging, :omeka, :startproject]
+  before_filter :authorized?, :only => [:owner, :staging, :omeka, :startproject,:workActivity]
   before_filter :get_data, :only => [:owner, :staging, :omeka, :upload, :new_upload, :startproject, :empty_work, :create_work]
 
 

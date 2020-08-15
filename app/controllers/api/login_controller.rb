@@ -1,7 +1,7 @@
 class Api::LoginController < Api::ApiController
 
   def public_actions
-    return [:login]
+    return [:login,:functions]
   end
 
   def login
@@ -16,5 +16,25 @@ class Api::LoginController < Api::ApiController
       render_serialized ResponseWS.simple_error('api.login.fail')
     end
   end
+
+
+  def functions
+    user_id = params[:id]
+    if user_id != nil
+      user = User.find_by(id:user_id)
+      if (user != nil )
+        # Record login event
+        functions = user.role.functionrole
+        render_serialized ResponseWS.ok('api.login.success',functions)
+      else
+        functions = Functionrole.where(public: true)
+        render_serialized ResponseWS.ok('api.login.success',functions)
+      end
+    else
+        functions = Functionrole.where("public is true and uri is not null and uri <> ''")
+        render_serialized ResponseWS.ok('api.login.success',functions)
+    end
+  end 
+
 
 end

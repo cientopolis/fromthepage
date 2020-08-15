@@ -65,6 +65,7 @@ pt:
       error: "Erro do servidor, tente novamente mais tarde."
     session:
       not_allowed: "Para acessar este conteúdo você deve fazer o login"
+      permission_denied: "You don't have permission to access"
     login:
       success: "Bem-vindo ao Transcriptor!"
       fail: "Nome de usuário ou senha inválidos, tente novamente."
