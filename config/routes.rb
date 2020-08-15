@@ -96,6 +96,7 @@ Fromthepage::Application.routes.draw do
 
     resources :test, path: 'test', only: [:index]
     post 'login', :to=>'login#login'
+    post 'functions', :to=>'login#functions'
     patch '/api/user', :to=>'user#update'
     get 'collection/list_own', :to=>'collection#list_own'
 

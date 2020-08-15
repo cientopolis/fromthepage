@@ -9,16 +9,28 @@ class Api::ApiController < ApplicationController
   before_action :authorized?
   
   def authorized?
+    puts "--------------la accion es"
+    puts controller_name+'#'+action_name
+    puts "--------------"
     unless public_actions.include? action_name.to_sym
       unless user_signed_in?
         logger.debug "[ACCESS] #{controller_name}##{action_name} -> User not authorized"
         render_serialized _not_signed_error
       else
         logger.debug "[ACCESS] #{controller_name}##{action_name} -> Signed as #{current_user.login}"
+        unless current_user.canAccess(controller_name+'#'+action_name)
+          logger.debug "[ACCESS DENIED]"
+          render_serialized _not_permision_error
+        end
       end
     else
       logger.debug "[ACCESS] #{controller_name}##{action_name} -> Public action"
     end
+  end
+
+
+  def canAccess(endpoint)
+    return Functionrole.exists?(apiendpoint: endpoint,public:true)
   end
   
   def public_actions
@@ -41,6 +53,10 @@ class Api::ApiController < ApplicationController
   private
     def _not_signed_error
       return ResponseWS.simple_error('api.session.not_allowed')
+    end
+    
+    def _not_permision_error
+      return ResponseWS.simple_error('api.session.permission_denied')
     end
     
     def get_fields(fields_s)

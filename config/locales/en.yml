@@ -65,6 +65,7 @@ en:
       error: "Server error, Contact the administrator"
     session:
       not_allowed: "To access this content you must log in to this site"
+      permission_denied: "You don't have permission to access"
     login:
       success: "Welcome to Transcriptor!"
       fail: "Username or password not valid, try again."

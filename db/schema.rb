@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200711182910) do
+ActiveRecord::Schema.define(version: 20200813192324) do
 
   create_table "ahoy_events", force: :cascade do |t|
     t.integer  "visit_id",   limit: 4
@@ -223,6 +223,21 @@ ActiveRecord::Schema.define(version: 20200711182910) do
   add_index "friendly_id_slugs", ["slug", "sluggable_type"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type", using: :btree
   add_index "friendly_id_slugs", ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id", using: :btree
   add_index "friendly_id_slugs", ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type", using: :btree
+
+  create_table "functionroles", force: :cascade do |t|
+    t.string   "name",        limit: 255
+    t.string   "uri",         limit: 255
+    t.text     "descripton",  limit: 65535
+    t.datetime "created_at",                                null: false
+    t.datetime "updated_at",                                null: false
+    t.boolean  "public",                    default: false
+    t.text     "apiendpoint", limit: 65535
+  end
+
+  create_table "functionroles_roles", id: false, force: :cascade do |t|
+    t.integer "functionrole_id", limit: 4
+    t.integer "role_id",         limit: 4
+  end
 
   create_table "ia_leaves", force: :cascade do |t|
     t.integer  "ia_work_id",  limit: 4
@@ -471,6 +486,13 @@ ActiveRecord::Schema.define(version: 20200711182910) do
     t.integer  "cached_weighted_score", limit: 4,     default: 0
   end
 
+  create_table "roles", force: :cascade do |t|
+    t.string   "name",        limit: 255
+    t.text     "description", limit: 65535
+    t.datetime "created_at",                null: false
+    t.datetime "updated_at",                null: false
+  end
+
   create_table "sc_canvases", force: :cascade do |t|
     t.string   "sc_id",              limit: 255
     t.integer  "sc_manifest_id",     limit: 4
@@ -600,6 +622,7 @@ ActiveRecord::Schema.define(version: 20200711182910) do
     t.datetime "authentication_token_created_at"
     t.string   "rank",                            limit: 255
     t.integer  "rank_badge_count",                limit: 4
+    t.integer  "role_id",                         limit: 4
   end
 
   add_index "users", ["authentication_token"], name: "index_users_on_authentication_token", unique: true, using: :btree

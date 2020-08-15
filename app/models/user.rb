@@ -50,6 +50,8 @@ class User < ActiveRecord::Base
 
   after_destroy :clean_up_orphans
 
+  belongs_to :role
+
   def all_owner_collections
     query = Collection.where("owner_user_id = ? or collections.id in (?)", self.id, self.owned_collections.ids)
     Collection.where(query.where_values.inject(:or)).uniq.order(:title)
@@ -185,6 +187,18 @@ class User < ActiveRecord::Base
 
     #query = Deed.where("user_id = ? or work_id = (?)", self.id, work_id)
     #Deed.where(query.where_values.inject(:or)).uniq.order(:id)
+  end
+
+  def frontend_functions
+      self.role.functionrole.where("apiendpoint is null OR apiendpoint = ''")
+  end
+
+  def backend_functions
+      self.role.functionrole.where("uri is null AND apiendpoint is not null")
+  end
+
+  def canAccess(endpoint)
+    return self.role.functionrole.exists?(apiendpoint:endpoint)
   end
 
 end
