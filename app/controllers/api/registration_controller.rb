@@ -43,8 +43,7 @@ class Api::RegistrationController < Api::ApiDeviceRegistrationController
     if resource_saved
       # call GamificationHelper
       alert = GamificationHelper.registerEvent(@user.email)
-
-      render_serialized ResponseWS.ok('api.registration.create.success',@user,alert)
+      render_serialized(ResponseWS.ok('api.registration.create.success',@user,alert), [], [:frontend_functions])
     else
       clean_up_passwords resource
       @validatable = devise_mapping.validatable?

@@ -3,12 +3,9 @@ class Api::ApiDeviceRegistrationController < Devise::RegistrationsController
   include I18nHelper
   
   before_action :set_locale
-#  before_action :authorized?
   
- 
-  
-  def render_serialized(object)
-    render json: object
+  def render_serialized(object, properties = [], methods = [])
+    render json: object, :include => properties, :methods => methods
   end
   
   def response_serialized_object(object)
