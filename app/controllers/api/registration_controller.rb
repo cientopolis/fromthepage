@@ -36,7 +36,7 @@ class Api::RegistrationController < Api::ApiDeviceRegistrationController
     end
     @user.admin = true
     @user.owner = true
-    collaboratorrole = Role.find_by(name: "collaborator")
+    collaboratorrole = Role.find_by_name("collaborator")
     @user.role=collaboratorrole
     resource_saved = @user.save
     yield resource if block_given?
