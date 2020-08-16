@@ -45,7 +45,7 @@ functionendpoints = [
     {name:'',isAdmin:false,public:true,endpoint:'registration#create'},
     {name:'',isAdmin:false,public:true,endpoint:'registration#after_sign_in_path_for'},
     {name:'',isAdmin:false,public:true,endpoint:'registration#destroy'},
-    {name:'',isAdmin:false,public:true,endpoint:'registration#aupdate'}, 
+    {name:'',isAdmin:false,public:true,endpoint:'registration#update'}, 
     {name:'',isAdmin:false,public:true,endpoint:'schemaOrg#get_schema_type'},
     {name:'',isAdmin:false,public:true,endpoint:'schemaOrg#get_schema_config'},
     {name:'',isAdmin:false,public:true,endpoint:'search#list_semantic_references'},
