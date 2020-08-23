@@ -103,7 +103,7 @@ class Api::CollectionController < Api::ApiController
   end
 
   def export_as_rdf
-    file_content = @collection.export_as_rdf['data'].body
+    file_content = @collection.export_as_rdf
     send_data file_content, :filename => "#{@collection.slug}.rdf"
   end
   

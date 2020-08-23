@@ -1,5 +1,6 @@
 require_relative '../http-client/http-client'
 require_relative '../schema_helper'
+require_relative 'utils/rdf-utils'
 require "base64"
 require 'json/ld'
 require 'rdf/turtle'
@@ -481,7 +482,8 @@ class VirtuosoClient
           }
       }}
     "
-    do_query(query, 'application/rdf+xml')
+    exported_data = do_query(query, 'application/rdf+xml')
+    RdfUtils.format_export(exported_data['data'].body)
   end
 
   def get_transcriptor_ontology

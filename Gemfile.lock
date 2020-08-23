@@ -264,6 +264,11 @@ GEM
       rdf (~> 3.1)
       rdf-aggregate-repo (~> 3.1)
       rdf-xsd (~> 3.1)
+    rdf-rdfxml (3.1.0)
+      htmlentities (~> 4.3)
+      rdf (~> 3.1)
+      rdf-rdfa (~> 3.1)
+      rdf-xsd (~> 3.1)
     rdf-turtle (3.1.0)
       ebnf (~> 1.2)
       rdf (~> 3.1)
@@ -413,6 +418,7 @@ DEPENDENCIES
   rake
   rdf
   rdf-rdfa
+  rdf-rdfxml
   rdf-turtle
   recaptcha (= 0.3.6)
   riiif
