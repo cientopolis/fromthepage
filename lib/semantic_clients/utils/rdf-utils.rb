@@ -15,10 +15,7 @@ class RdfUtils
             end
         end
 
-        rdfxmlString = RDF::RDFXML::Writer.buffer(prefixes: {
-            rdfs: "http://www.w3.org/2000/01/rdf-schema#",
-            transcriptor: "http://transcriptor.com/",
-            schema: "http://schema.org/"}, 
+        rdfxmlString = RDF::RDFXML::Writer.buffer(prefixes: prefixes, 
             attributes: :none, 
             max_depth: 0
         ) do |writer|

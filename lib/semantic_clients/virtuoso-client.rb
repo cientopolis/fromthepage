@@ -8,6 +8,14 @@ require 'sparql/client'
 
 class VirtuosoClient
 
+  TRANSCRIPTOR_CLASSES = [
+    'transcriptor:Collection',
+    'transcriptor:Work', 
+    'transcriptor:Page', 
+    'transcriptor:Layer', 
+    'transcriptor:Mark'
+  ]
+
   def initialize()
     @host = ENV['VIRTUOSO_HOST']
     @collection = ENV['VIRTUOSO_COLLECTION']
@@ -215,6 +223,7 @@ class VirtuosoClient
             #{ entityType }
             #{constructQueryFilters(filter, conditions)}
             #{constructFilters(filter, conditions, matchAllConditions)}
+            #{default_type_filter("?entityType")}
         }
         #{limit}
     "
@@ -483,7 +492,7 @@ class VirtuosoClient
       }}
     "
     exported_data = do_query(query, 'application/rdf+xml')
-    RdfUtils.format_export(exported_data['data'].body)
+    RdfUtils.format_export(exported_data['data'].body, get_prefixes)
   end
 
   def get_transcriptor_ontology
@@ -680,5 +689,10 @@ class VirtuosoClient
         puts exception.inspect
         return []
       end
+    end
+
+    # this filter prevents to list default ontology types
+    def default_type_filter(type_variable)
+      return "FILTER (#{type_variable} NOT IN (#{TRANSCRIPTOR_CLASSES.join(',')}))."
     end
 end
