@@ -3,7 +3,7 @@ class AdminController < ApplicationController
 
   before_filter :authorized?
 
-  PAGES_PER_SCREEN = 20
+  PAGES_PER_SCREEN = 5
 
   # no layout if xhr request
   layout Proc.new { |controller| controller.request.xhr? ? false : nil }, :only => [:edit_user, :update_user, :new_owner]

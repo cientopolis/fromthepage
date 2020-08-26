@@ -82,6 +82,13 @@ es:
         success: "La Colección ha sido actualizada"
       destroy:
         success: "La Colección ha sido borrada"
+      users:
+        success: "Los usuarios se listaron correctamente"
+      owners:
+        success: "Los owners de la coleccion se listaron correctamente"
+      addordeleteowner:
+        success: "El owner fue modificado correctamente"
+        failadmin: "No podés modificar un admin owner"
     work:
       create:
         success: "El Trabajo ha sido creada"

@@ -34,8 +34,8 @@ class Api::RegistrationController < Api::ApiDeviceRegistrationController
     else
        @user = build_resource(params[:user])
     end
-    @user.admin = true
-    @user.owner = true
+    @user.admin = false
+    @user.owner = false
     collaboratorrole = Role.find_by_name("collaborator")
     @user.role=collaboratorrole
     resource_saved = @user.save
@@ -61,16 +61,29 @@ class Api::RegistrationController < Api::ApiDeviceRegistrationController
 #redefino la salida del edit profile de Devise (o eso deberia :S )
 
   def update
-    
-     @user.update(params[:user])
-     if @user.save!
-       render_serialized ResponseWS.ok('api.registration.update.success',@user)
-     else
-       render_serialized ResponseWS.error(resource.errors.full_messages.to_sentence,nil) 
-     end
+    @user = User.find_by(id:params[:user][:id])
+    role = nil
+    if params[:user][:admin] && !@user.admin
+      role = Role.find_by_name("administrator")
+      @user.admin=true
+    else
+      @user.admin=false
+      role = Role.find_by_name("collaborator")
+    end
+    @user.update(params[:user])
+    @user.role=role
+    if @user.save!
+      render_serialized ResponseWS.ok('api.registration.update.success',@user)
+    else
+      render_serialized ResponseWS.error(resource.errors.full_messages.to_sentence,nil) 
+    end
   end
 
+
+
+
   def destroy
+    @user = User.find_by(id:params[:userid])
     yield resource if block_given?
     if @user.destroy!
       render_serialized ResponseWS.ok('api.registration.destroy.success',@user)

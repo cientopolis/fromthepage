@@ -132,6 +132,23 @@ class Collection < ActiveRecord::Base
     SemanticHelper.export_as_rdf("transcriptor:#{self.slug}")
   end
 
+  def as_json(options={})
+    methods = [:isOwner]
+    options[:methods] = options[:methods] ? options[:methods] | methods : methods
+    super
+  end
+
+  def isOwner
+    unless User.current_user.nil? || self.owner==nil
+      User.current_user.admin || self.owner.id == User.current_user.id || self.owners.exists?(:id => User.current_user.id)
+    else
+      false
+    end
+  end
+  def isOwnerCollection(user)
+    self.owners.exists?(:id => user.id) || self.owner.id == user.id
+  end
+  
   protected
     def set_transcription_conventions
       unless self.transcription_conventions.present?

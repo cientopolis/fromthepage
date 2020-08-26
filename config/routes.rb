@@ -59,8 +59,8 @@ Fromthepage::Application.routes.draw do
     devise_for :user,controllers:{masquerades: "masquerades", registrations: "registrations"}
     devise_scope :user do
       post 'registration' => 'registration#create'
-
       put 'registration' => 'registration#update'
+      delete 'registration/:userid' => 'registration#destroy'
     end
 
     post 'users/password' => 'password#create'
@@ -99,7 +99,9 @@ Fromthepage::Application.routes.draw do
     post 'functions', :to=>'login#functions'
     patch '/api/user', :to=>'user#update'
     get 'collection/list_own', :to=>'collection#list_own'
-
+    post 'collection/add_owners/:id', :to=>'collection#add_owners'
+    get 'collection/owners/:id', :to=>'collection#owners'
+    get 'collection/users/:id', :to=>'collection#users'
     get 'ontology/list', :to=>'ontology#list'
     post 'ontology', :to=>'ontology#create'
     put 'ontology/:id', :to=>'ontology#update'
@@ -163,6 +165,7 @@ Fromthepage::Application.routes.draw do
     match '/semantic_ontology/list_properties', as: :list_properties, to: 'semantic_ontology#list_properties', via: [:get,:post]
     match '/semantic_ontology/list_relations', as: :list_relations, to: 'semantic_ontology#list_relations', via: [:get,:post]
     match '/semantic_ontology/search_loaded_components', as: :search_loaded_components, to: 'search#search_loaded_components', via: [:get,:post]
+    get '/admin/user_list' , :to=>'admin#user_list'
   end
 
   match '/:controller(/:action(/:id))', via: [:get, :post]

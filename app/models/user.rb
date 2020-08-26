@@ -15,6 +15,8 @@ class User < ActiveRecord::Base
   cattr_accessor :current_user
   acts_as_voter
   attr_accessor :login_id
+  attr_accessor :isOwner
+  attr_accessible :isOwner
 
   has_many(:owner_works,
            { :foreign_key => "owner_user_id",
@@ -66,7 +68,11 @@ class User < ActiveRecord::Base
       nil
     end
   end
-
+  def as_json(options={})
+    methods = [:isOwner]
+    options[:methods] = options[:methods] ? options[:methods] | methods : methods
+    super
+  end
   def owner_works
     works = Work.where(collection_id: self.all_owner_collections.ids)
     return works
@@ -189,6 +195,8 @@ class User < ActiveRecord::Base
     #Deed.where(query.where_values.inject(:or)).uniq.order(:id)
   end
 
+
+  
   def frontend_functions
       self.role.functionrole.where("apiendpoint is null OR apiendpoint = ''")
   end
