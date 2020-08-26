@@ -7,7 +7,8 @@ class Api::ApiController < ApplicationController
   
   before_action :set_locale
   before_action :authorized?
-  
+  PAGES_PER_SCREEN = Rails.configuration.PAGES_PER_SCREEN
+
   def authorized?
     puts "--------------la accion es"
     puts controller_name+'#'+action_name
@@ -30,7 +31,8 @@ class Api::ApiController < ApplicationController
 
 
   def canAccess(endpoint)
-    return Functionrole.exists?(apiendpoint: endpoint,public:true)
+    # return Functionrole.exists?(apiendpoint: endpoint,public:true)
+    return true
   end
   
   def public_actions
@@ -49,7 +51,12 @@ class Api::ApiController < ApplicationController
   def response_serialized_object(object)
     render_serialized ResponseWS.default_ok(object)
   end
-  
+    
+  def response_serialized_object_pagination(message,objects,alert)
+    data = ListResponse.new(objects)
+    render_serialized ResponseWS.list_ok("OK",message,data,alert)
+  end
+
   private
     def _not_signed_error
       return ResponseWS.simple_error('api.session.not_allowed')

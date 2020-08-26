@@ -1,7 +1,7 @@
 # handles administrative tasks for the collection object
 class Api::CollectionController < Api::ApiController
   
-  before_action :set_collection, :only => [:show, :edit, :update, :destroy, :contributors, :new_work, :export_as_rdf]
+  before_action :set_collection, :only => [:show, :edit, :update, :destroy, :contributors, :new_work, :export_as_rdf,:add_owners,:owners,:users]
   before_filter :load_settings, :only => [:edit, :update, :upload]
   
   def public_actions
@@ -106,7 +106,66 @@ class Api::CollectionController < Api::ApiController
     file_content = @collection.export_as_rdf['data'].body
     send_data file_content, :filename => "#{@collection.slug}.rdf"
   end
-  
+
+  def add_owner
+    @user.owner = true
+    @user.save!
+    @collection.owners << @user
+    redirect_to action: 'edit', collection_id: @collection.id
+  end
+
+  def add_owners
+    error = false
+    for userparam in params[:users]
+      user = User.find_by(:id => userparam[:id])
+      if user && !user.admin 
+        if user
+          if userparam[:isOwner] && !@collection.isOwnerCollection(user) 
+            user.owner = true
+            user.save!
+            @collection.owners << user      
+          else    
+            @collection.owners.delete(user)
+          end
+        end
+      else
+        error = true
+      end
+    end
+    if error
+      render_serialized ResponseWS.simple_error('api.collection.addordeleteowner.failadmin')
+    else
+      #redirect_to action: 'edit', collection_id: @collection.id =end
+      render_serialized ResponseWS.ok('api.collection.addordeleteowner.success',@collection.owners)
+    end
+  end
+
+  def owners
+    @main_owner = @collection.owner
+    @owners = @collection.owners + [@main_owner]
+    @nonowners = User.all - @owners
+    render_serialized ResponseWS.ok('api.collection.owners.success',@nonowners)
+  end
+
+  def users
+    @main_owner = @collection.owner
+    @owners = @collection.owners + [@main_owner]
+    if params[:search]
+        @users = User.search(params[:search]).order(login: :asc).paginate :page => params[:page], :per_page => PAGES_PER_SCREEN
+    else
+        @users = User.order(login: :asc).paginate :page => params[:page], :per_page => PAGES_PER_SCREEN
+    end
+    for user in @users
+      if @owners.include? user
+        user.isOwner = true
+      else
+        user.isOwner = false
+      end
+    end
+    response_serialized_object_pagination('api.collection.users.success',@users,alert)
+    
+  end
+
   private
     def set_collection
       unless @collection
@@ -121,6 +180,7 @@ class Api::CollectionController < Api::ApiController
         end
       end
     end
+
 
     def set_collection_for_work(collection, work)
       # first update the id on the work

@@ -82,6 +82,13 @@ pt:
         success: "A coleção foi atualizada"
       destroy:
         success: "A coleção foi excluída"
+      users:
+        success: "Los usuarios se listaron correctamente"
+      owners:
+        success: "Los owners de la coleccion se listaron correctamente"
+      addordeleteowner:
+        success: "El owner fue modificado correctamente"
+        failadmin: "No podés modificar un admin owner"
     work:
       create:
         success: "O trabalho foi criado"

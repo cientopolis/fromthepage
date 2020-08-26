@@ -82,6 +82,13 @@ fr:
         success: "La collection a été mise à jour"
       destroy:
         success: "La collection a été supprimée"
+      users:
+        success: "Les utilisateurs ont été répertoriés avec succès"
+      owners:
+        success: "Les propriétaires de collection ont été répertoriés correctement"
+      addordeleteowner:
+        success: "Le propriétaire a été modifié avec succès"
+        failadmin: "Je ne peux pas modifier un propriétaire administrateur"
     work:
       create:
         success: "L'œuvre a été créée"
@@ -161,3 +168,12 @@ fr:
         success: "Le forum a été mis à jour"
       destroy:
         success: "Le forum a été supprimé"
+    ontology:
+      create:
+        success: "L'ontologie a été créée avec succès!"
+      update:
+        success: "L'ontologie a été mise à jour avec succès!"
+      destroy:
+        success: "L'ontologie a été supprimée avec succès!"
+      list:
+        success: "Les ontologies ont été répertoriées"

@@ -24,6 +24,8 @@ Rails.application.configure do
     :authentication => 'login', 
     :domain => 'yourdomain.com', # your domain to identify your server when connecting
   }
+
+
   config.action_mailer.default_url_options =  { host: 'localhost:3000' } #change this to match your server URL, i.e. www.fromthepage.com
   config.action_mailer.default_options
   # Don't care if the mailer can't send.
@@ -54,4 +56,5 @@ Rails.application.configure do
   # location of system calls on this machine
   NEATO = '/usr/bin/neato'
   RAKE = '/usr/bin/env rake'
+  config.PAGES_PER_SCREEN = 7
 end

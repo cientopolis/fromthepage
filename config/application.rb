@@ -28,6 +28,7 @@ module Fromthepage
 
     config.api_only = false
 
+    
     config.action_mailer.preview_path = "#{Rails.root}/lib/mailer_previews"
 
     # config.action_dispatch.default_headers = {

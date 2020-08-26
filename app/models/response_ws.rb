@@ -1,13 +1,13 @@
 class ResponseWS
-  attr_accessor :status, :message, :data
+  attr_accessor :status, :message, :data, :totalitems, :itemsperpage, :currentpage
   
-  def initialize(status,message,data,alert)
+  def initialize(status,message,data,alert,totalitems = nil,itemsperpage = nil,currentpage = nil)
     @status = status
     @message = I18n.t(message, :default => message)
     @data = ResponseWS.flatResponse(data)
     @alert = alert
   end
-  
+
   def self.ok(message,data,alert = nil)
     ResponseWS.new("OK",message,data,alert)
   end
@@ -16,6 +16,10 @@ class ResponseWS
     ResponseWS.ok(message,nil,alert)
   end
   
+  def self.list_ok(status,message,data,alert = nil)
+      ResponseWS.new(status,message,data,alert)
+  end
+
   def self.default_ok(data,alert = nil)
     ResponseWS.ok('api.default.ok',data,alert)
   end

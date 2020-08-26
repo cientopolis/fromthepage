@@ -82,6 +82,13 @@ en:
         success: "Collection has been updated"
       destroy:
         success: "Collection has been deleted"
+      users:
+        success: "Users collection shown successfully"
+      owners:
+        success: "The owners collection shown successfully"
+      addordeleteowner:
+        success: "Owner modified successfully"
+        failadmin: "You can't delete an admin owner"
     work:
       create:
         success: "Work has been created"
