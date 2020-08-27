@@ -149,7 +149,7 @@ class Api::WorkController < Api::ApiController
   # end
 
   def export_as_rdf
-    file_content = @work.export_as_rdf['data'].body
+    file_content = @work.export_as_rdf
     send_data file_content, :filename => "#{@work.slug}.rdf"
   end
   
